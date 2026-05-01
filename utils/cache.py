@@ -8,6 +8,7 @@ import json
 from functools import wraps
 from typing import Any, Optional
 from config import Config
+from utils.logger import logger
 
 # Initialize cache
 cache = diskcache.Cache(Config.CACHE_DIR)
@@ -19,7 +20,18 @@ class CacheManager:
     @staticmethod
     def get(key: str) -> Optional[Any]:
         """Get value from cache"""
-        return cache.get(key)
+        result = cache.get(key)
+        if result:
+            # Debug cache hit
+            cache_type = CacheManager._get_cache_type(key)
+            entity_info = CacheManager._get_entity_info(key)
+            logger.info(f"🎯 CACHE HIT: {cache_type} for {entity_info} (key: {key})")
+        else:
+            # Debug cache miss
+            cache_type = CacheManager._get_cache_type(key)
+            entity_info = CacheManager._get_entity_info(key)
+            logger.info(f"❌ CACHE MISS: {cache_type} for {entity_info} (key: {key})")
+        return result
     
     @staticmethod
     def set(key: str, value: Any, timeout: int = None) -> bool:
@@ -29,8 +41,21 @@ class CacheManager:
                 cache.set(key, value, expire=timeout)
             else:
                 cache.set(key, value, expire=Config.CACHE_DEFAULT_TIMEOUT)
+            
+            # Debug cache storage
+            cache_type = CacheManager._get_cache_type(key)
+            entity_info = CacheManager._get_entity_info(key)
+            timeout_info = f" (expires in {timeout}s)" if timeout else " (default timeout)"
+            logger.info(f"💾 CACHE STORE: {cache_type} for {entity_info}{timeout_info} (key: {key})")
+            
+            # Log data size info for analytics
+            if isinstance(value, (dict, list)):
+                data_size = len(json.dumps(value))
+                logger.info(f"📊 DATA SIZE: {data_size} characters for {entity_info}")
+            
             return True
-        except Exception:
+        except Exception as e:
+            logger.error(f"❌ CACHE ERROR: Failed to store {key}: {e}")
             return False
     
     @staticmethod
@@ -41,6 +66,52 @@ class CacheManager:
             return True
         except Exception:
             return False
+    
+    @staticmethod
+    def _get_cache_type(key: str) -> str:
+        """Determine the type of cache operation from key"""
+        if 'gemini_risk' in key:
+            return 'STUDENT RISK/READINESS ANALYSIS'
+        elif 'gemini_cluster' in key:
+            return 'CLASS STUDY PATTERN CLUSTERING'
+        elif 'gemini_insights' in key:
+            return 'STUDENT INSIGHTS ANALYSIS'
+        elif 'gemini_planning' in key:
+            return 'AI PLANNING ASSISTANCE'
+        elif 'gemini_doubt' in key:
+            return 'AI DOUBT RESOLUTION'
+        else:
+            return 'GENERAL CACHE'
+    
+    @staticmethod
+    def _get_entity_info(key: str) -> str:
+        """Extract entity information from cache key"""
+        try:
+            if 'student' in key.lower() or ':predict_student_risk_and_readiness:' in key:
+                # Extract student UID from key
+                parts = key.split(':')
+                if len(parts) >= 3:
+                    uid = parts[-1]
+                    return f"Student UID: {uid[:8]}..."
+                return "Student (Unknown UID)"
+            elif 'class' in key.lower() or ':analyze_class_study_patterns:' in key:
+                # Extract class ID from key
+                parts = key.split(':')
+                if len(parts) >= 3:
+                    class_id = parts[-1]
+                    return f"Class ID: {class_id[:8]}..."
+                return "Class (Unknown ID)"
+            elif 'thread' in key.lower():
+                # Extract thread ID from key
+                parts = key.split(':')
+                if len(parts) >= 2:
+                    thread_id = parts[-1]
+                    return f"Thread ID: {thread_id[:8]}..."
+                return "Thread (Unknown ID)"
+            else:
+                return "Unknown Entity"
+        except Exception:
+            return "Unknown Entity"
     
     @staticmethod
     def clear():

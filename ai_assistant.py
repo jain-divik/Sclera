@@ -7,7 +7,7 @@ import json
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 from config import config
-from utils import logger
+from utils.logger import logger
 # Import will be done in __init__ to handle errors gracefully
 # Remove global Firebase client - will be initialized when needed
 
@@ -638,68 +638,180 @@ class AIAssistant:
         return "\n".join(lines)
 
     def generate_planning_response(self, message: str, context: Dict[str, Any]) -> str:
-        """Generate a response for academic planning queries"""
+        """Generate a response for academic planning queries with automatic model switching"""
+        # Debug: Starting AI planning response
+        user_name = context.get('user_name', 'Student')
+        user_uid = context.get('user_uid', 'Unknown')
+        logger.info(f"🤖 STARTING AI ANALYSIS: Planning Assistant for User: {user_name} (UID: {user_uid[:8]}...)")
+        logger.info(f"📝 USER QUERY: {message[:100]}{'...' if len(message) > 100 else ''}")
+        
+        if not self.ai_available or not hasattr(self, 'model') or not self.model:
+            error_msg = "AI Assistant is not properly initialized. "
+            if hasattr(self, 'error_message'):
+                error_msg += f"Error: {self.error_message}"
+            logger.error(error_msg)
+            return "I'm sorry, but the AI Assistant is currently unavailable. Please try again later."
+        
+        # Create a prompt with context
+        prompt = self._build_planning_prompt(message, context)
+        
+        # Try current model first
         try:
-            if not self.ai_available or not hasattr(self, 'model') or not self.model:
-                error_msg = "AI Assistant is not properly initialized. "
-                if hasattr(self, 'error_message'):
-                    error_msg += f"Error: {self.error_message}"
-                logger.error(error_msg)
-                return "I'm sorry, but the AI Assistant is currently unavailable. Please try again later."
-            
-            # Create a prompt with context
-            prompt = self._build_planning_prompt(message, context)
-            
-            # Generate response
             response = self.model.generate_content(prompt)
-            
-            # Process and return the response
             if hasattr(response, 'text') and response.text.strip():
-                return response.text.strip()
+                response_text = response.text.strip()
+                # Debug: AI planning response completed
+                logger.info(f"✅ AI ANALYSIS COMPLETED: Planning Assistant generated response for {user_name}")
+                logger.info(f"📏 RESPONSE LENGTH: {len(response_text)} characters")
+                logger.info(f"🤖 MODEL USED: {self.model_name}")
+                return response_text
             else:
                 logger.warning("Received empty response from model")
                 return "I didn't receive a valid response. Could you please rephrase your question?"
                 
         except Exception as e:
-            error_msg = f"Error in generate_planning_response: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            return (
-                "I encountered an unexpected error while processing your request. "
-                "The issue has been logged and will be investigated. "
-                "Please try again later or contact support if the problem persists."
-            )
+            error_msg = str(e)
+            logger.error(f"Error in generate_planning_response with {self.model_name}: {error_msg}")
+            
+            # Check if it's a quota error and try switching models
+            if "quota" in error_msg.lower() or "429" in error_msg or "limit" in error_msg.lower():
+                logger.warning(f"Quota exceeded for {self.model_name}, attempting to switch models")
+                
+                # Try to switch to next available model
+                if self._switch_to_next_model():
+                    logger.info(f"Switched to model: {self.model_name}")
+                    try:
+                        response = self.model.generate_content(prompt)
+                        if hasattr(response, 'text') and response.text.strip():
+                            return response.text.strip()
+                        else:
+                            logger.warning("Received empty response from new model")
+                            return "I didn't receive a valid response from the new model. Could you please rephrase your question?"
+                    except Exception as retry_e:
+                        logger.error(f"Error with new model {self.model_name}: {str(retry_e)}")
+                        # If switching fails, try fallback
+                        return self._generate_smart_planning_fallback(message, context)
+                else:
+                    logger.warning("No alternative models available, using fallback")
+                    return self._generate_smart_planning_fallback(message, context)
+            else:
+                # Not a quota error, return generic error message
+                return (
+                    "I encountered an unexpected error while processing your request. "
+                    "The issue has been logged and will be investigated. "
+                    "Please try again later or contact support if the problem persists."
+                )
             
     def generate_doubt_response(self, message: str, context: Dict[str, Any]) -> str:
-        """Generate a response for doubt resolution"""
+        """Generate a response for doubt resolution with automatic model switching"""
+        # Debug: Starting AI doubt response
+        user_name = context.get('user_name', 'Student')
+        user_uid = context.get('user_uid', 'Unknown')
+        logger.info(f"🤖 STARTING AI ANALYSIS: Doubt Resolution Assistant for User: {user_name} (UID: {user_uid[:8]}...)")
+        logger.info(f"📝 USER QUERY: {message[:100]}{'...' if len(message) > 100 else ''}")
+        
+        if not self.ai_available or not hasattr(self, 'model') or not self.model:
+            error_msg = "AI Assistant is not properly initialized. "
+            if hasattr(self, 'error_message'):
+                error_msg += f"Error: {self.error_message}"
+            logger.error(error_msg)
+            return "I'm sorry, but the AI Assistant is currently unavailable. Please try again later."
+        
+        # Create a prompt with context
+        prompt = self._build_doubt_prompt(message, context)
+        
+        # Try current model first
         try:
-            if not self.ai_available or not hasattr(self, 'model') or not self.model:
-                error_msg = "AI Assistant is not properly initialized. "
-                if hasattr(self, 'error_message'):
-                    error_msg += f"Error: {self.error_message}"
-                logger.error(error_msg)
-                return "I'm sorry, but the AI Assistant is currently unavailable. Please try again later."
-            
-            # Create a prompt with context
-            prompt = self._build_doubt_prompt(message, context)
-            
-            # Generate response
             response = self.model.generate_content(prompt)
-            
-            # Process and return the response
             if hasattr(response, 'text') and response.text.strip():
-                return response.text.strip()
+                response_text = response.text.strip()
+                # Debug: AI doubt response completed
+                logger.info(f"✅ AI ANALYSIS COMPLETED: Doubt Resolution Assistant generated response for {user_name}")
+                logger.info(f"📏 RESPONSE LENGTH: {len(response_text)} characters")
+                logger.info(f"🤖 MODEL USED: {self.model_name}")
+                return response_text
             else:
                 logger.warning("Received empty response from model")
                 return "I didn't receive a valid response. Could you please rephrase your question?"
                 
         except Exception as e:
-            error_msg = f"Error in generate_doubt_response: {str(e)}"
-            logger.error(error_msg, exc_info=True)
-            return (
-                "I encountered an unexpected error while processing your doubt. "
-                "The issue has been logged and will be investigated. "
-                "Please try again later or contact support if the problem persists."
-            )
+            error_msg = str(e)
+            logger.error(f"Error in generate_doubt_response with {self.model_name}: {error_msg}")
+            
+            # Check if it's a quota error and try switching models
+            if "quota" in error_msg.lower() or "429" in error_msg or "limit" in error_msg.lower():
+                logger.warning(f"Quota exceeded for {self.model_name}, attempting to switch models")
+                
+                # Try to switch to next available model
+                if self._switch_to_next_model():
+                    logger.info(f"Switched to model: {self.model_name}")
+                    try:
+                        response = self.model.generate_content(prompt)
+                        if hasattr(response, 'text') and response.text.strip():
+                            return response.text.strip()
+                        else:
+                            logger.warning("Received empty response from new model")
+                            return "I didn't receive a valid response from the new model. Could you please rephrase your question?"
+                    except Exception as retry_e:
+                        logger.error(f"Error with new model {self.model_name}: {str(retry_e)}")
+                        # If switching fails, try fallback
+                        return self._generate_smart_doubt_fallback(message, context)
+                else:
+                    logger.warning("No alternative models available, using fallback")
+                    return self._generate_smart_doubt_fallback(message, context)
+            else:
+                # Not a quota error, return generic error message
+                return (
+                    "I encountered an unexpected error while processing your doubt. "
+                    "The issue has been logged and will be investigated. "
+                    "Please try again later or contact support if the problem persists."
+                )
+
+    def _switch_to_next_model(self) -> bool:
+        """Switch to the next available model when quota is exceeded"""
+        if not hasattr(self, 'available_models') or not self.available_models:
+            logger.warning("No available models list found")
+            return False
+        
+        logger.info(f"Available models: {self.available_models}")
+        logger.info(f"Current model: {self.model_name}")
+        
+        # Find current model index
+        try:
+            current_index = self.available_models.index(self.model_name) if self.model_name else -1
+            logger.info(f"Current model index: {current_index}")
+        except ValueError:
+            current_index = -1
+            logger.info(f"Current model not found in list, starting from beginning")
+        
+        # Try models after current one
+        for i in range(current_index + 1, len(self.available_models)):
+            model_name = self.available_models[i]
+            logger.info(f"Trying model {i+1}/{len(self.available_models)}: {model_name}")
+            
+            try:
+                # Initialize the new model
+                new_model = self.genai.GenerativeModel(model_name=model_name)
+                
+                # Quick test without consuming quota
+                if hasattr(new_model, '_model_name'):
+                    self.model = new_model
+                    self.model_name = model_name
+                    self.ai_available = True
+                    logger.info(f"Successfully switched to model: {model_name}")
+                    return True
+                else:
+                    logger.warning(f"Model object creation failed for: {model_name}")
+                    continue
+                    
+            except Exception as e:
+                error_msg = str(e)
+                logger.warning(f"Failed to switch to {model_name}: {error_msg}")
+                # Always continue to next model, regardless of error type
+                continue
+        
+        logger.warning("No working models available")
+        return False
 
     def _generate_smart_planning_fallback(self, message: str, context: Dict[str, Any]) -> str:
         """Generate an intelligent planning response without AI"""

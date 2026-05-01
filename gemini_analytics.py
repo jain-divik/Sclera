@@ -13,7 +13,7 @@ import logging
 
 # Import existing modules
 from firebase_config import db
-from utils import logger
+from utils.logger import logger
 from utils.cache import cached, CacheManager
 from templates.academic_data import get_syllabus
 
@@ -182,14 +182,24 @@ class GeminiAnalytics:
                 return {}
             
             user_data = user_doc.to_dict()
+            # Debug: Log what data we're extracting
+            study_sessions = self._get_study_session_features(uid)
+            chapter_completion = self._get_chapter_completion_features(user_data)
+            exam_trends = self._get_exam_trend_features(user_data)
+            
+            logger.info(f"📊 STUDENT FEATURES for {user_data.get('name', 'Unknown')} ({uid[:8]}...):")
+            logger.info(f"  📚 Chapter Completion: {chapter_completion.get('completed_chapters', 0)}/{chapter_completion.get('total_chapters', 0)} ({chapter_completion.get('overall_completion', 0)}%)")
+            logger.info(f"  ⏱️  Study Sessions: {study_sessions.get('session_count_30d', 0)} sessions, {study_sessions.get('total_duration_30d', 0)} total minutes")
+            logger.info(f"  📈 Exam Trends: {len(exam_trends.get('recent_scores', []))} recent exams")
+            
             features = {
                 'uid': uid,
                 'name': user_data.get('name', 'Student'),
                 'purpose': user_data.get('purpose', ''),
                 'login_frequency': self._get_login_frequency(user_data),
-                'study_sessions': self._get_study_session_features(uid),
-                'chapter_completion': self._get_chapter_completion_features(user_data),
-                'exam_trends': self._get_exam_trend_features(user_data),
+                'study_sessions': study_sessions,
+                'chapter_completion': chapter_completion,
+                'exam_trends': exam_trends,
                 'heatmap_patterns': self._get_heatmap_patterns(uid)
             }
             
@@ -276,23 +286,71 @@ class GeminiAnalytics:
         """Analyze chapter completion by subject"""
         try:
             chapters_completed = user_data.get('chapters_completed', {})
-            purpose = user_data.get('purpose')
             
             if not chapters_completed:
                 return {'overall_completion': 0, 'by_subject': {}, 'total_chapters': 0, 'completed_chapters': 0}
             
+            # Debug: Log what we found
+            logger.info(f"    🔍 Found chapters_completed: {list(chapters_completed.keys())}")
+            
             # Get syllabus for total chapter counts
             total_by_subject = {}
-            if purpose == 'school' and user_data.get('school'):
+            
+            # Try to get syllabus from class data first
+            class_ids = user_data.get('class_ids', [])
+            if class_ids:
+                # Get syllabus from the first class (simplified)
+                try:
+                    from firebase_config import db
+                    class_doc = db.collection('classes').document(class_ids[0]).get()
+                    if class_doc.exists:
+                        class_data = class_doc.to_dict()
+                        board = class_data.get('board', 'CBSE')
+                        grade = class_data.get('grade', '10')
+                        purpose = class_data.get('purpose', 'highschool')
+                        
+                        logger.info(f"    📚 Getting syllabus for class: {board} {grade} ({purpose})")
+                        
+                        if purpose in ['highschool', 'school']:
+                            syllabus = get_syllabus('school', board, grade)
+                        else:
+                            # Handle JEE/NEET case
+                            if 'JEE' in str(board).upper():
+                                syllabus = get_syllabus('exam', 'JEE')
+                            elif 'NEET' in str(board).upper():
+                                syllabus = get_syllabus('exam', 'NEET')
+                            else:
+                                syllabus = get_syllabus('exam', board)
+                        
+                        logger.info(f"    📚 Syllabus retrieved with {len(syllabus)} subjects")
+                        
+                        for subject, data in syllabus.items():
+                            total_by_subject[subject] = len(data.get('chapters', {}))
+                except Exception as e:
+                    logger.warning(f"    ⚠️  Could not get class syllabus: {e}")
+                    # Fallback to CBSE 10
+                    syllabus = get_syllabus('school', 'CBSE', '10')
+                    for subject, data in syllabus.items():
+                        total_by_subject[subject] = len(data.get('chapters', {}))
+            
+            # Fallback to direct user data if no class info
+            elif user_data.get('purpose') == 'school' and user_data.get('school'):
                 school = user_data['school']
                 syllabus = get_syllabus('school', school.get('board'), school.get('grade'), 
                                      subject_combination=school.get('subject_combination'))
                 for subject, data in syllabus.items():
                     total_by_subject[subject] = len(data.get('chapters', {}))
-            elif purpose == 'exam_prep' and user_data.get('exam'):
+            elif user_data.get('purpose') == 'exam_prep' and user_data.get('exam'):
                 syllabus = get_syllabus('exam', user_data['exam'].get('type'))
                 for subject, data in syllabus.items():
                     total_by_subject[subject] = len(data.get('chapters', {}))
+            else:
+                # Default fallback to CBSE 10
+                syllabus = get_syllabus('school', 'CBSE', '10')
+                for subject, data in syllabus.items():
+                    total_by_subject[subject] = len(data.get('chapters', {}))
+            
+            logger.info(f"    📖 Total chapters by subject: {total_by_subject}")
             
             # Calculate completion rates
             by_subject = {}
@@ -327,6 +385,8 @@ class GeminiAnalytics:
         try:
             exam_results = user_data.get('exam_results', [])
             
+            logger.info(f"    📈 Found {len(exam_results)} exam results")
+            
             if len(exam_results) < 2:
                 return {
                     'recent_scores': [],
@@ -336,19 +396,25 @@ class GeminiAnalytics:
                 }
             
             # Sort by date and get last 4 exams
-            sorted_results = sorted(exam_results, key=lambda x: x.get('date', ''), reverse=True)[:4]
+            sorted_results = sorted(exam_results, key=lambda x: x.get('exam_date', ''), reverse=True)[:4]
             recent_scores = []
             
             for result in sorted_results:
                 try:
+                    score = 0
                     if 'percentage' in result:
                         score = float(result['percentage'])
+                        logger.info(f"    📊 Processing exam: {result.get('subject', 'Unknown')} - {score}%")
                     elif 'score' in result and 'max_score' in result:
                         score = (float(result['score']) / float(result['max_score'])) * 100
+                        logger.info(f"    📊 Processing exam: {result.get('subject', 'Unknown')} - {result.get('score', 0)}/{result.get('max_score', 0)} = {score:.1f}%")
                     else:
+                        logger.info(f"    ⚠️  No valid score data in: {result}")
                         continue
                     recent_scores.append(score)
-                except:
+                    logger.info(f"    ✅ Added score: {score:.1f}")
+                except Exception as e:
+                    logger.error(f"    ❌ Error processing exam result: {e}")
                     continue
             
             if len(recent_scores) < 2:
@@ -519,7 +585,14 @@ Be encouraging but realistic. The score should reflect true preparedness.
                 'study_pattern': student.get('heatmap_patterns', {}).get('study_pattern', 'unknown'),
                 'consistency_score': student.get('heatmap_patterns', {}).get('consistency_score', 0),
                 'peak_times': student.get('heatmap_patterns', {}).get('peak_times', [])[:2],  # Top 2 times
-                'session_frequency': student.get('study_sessions', {}).get('session_count_30d', 0)
+                'session_frequency': student.get('study_sessions', {}).get('session_count_30d', 0),
+                'total_study_time': student.get('study_sessions', {}).get('total_duration_30d', 0),
+                'chapter_completion': student.get('chapter_completion', {}).get('overall_completion', 0),
+                'completed_chapters': student.get('chapter_completion', {}).get('completed_chapters', 0),
+                'total_chapters': student.get('chapter_completion', {}).get('total_chapters', 0),
+                'avg_exam_score': student.get('exam_trends', {}).get('avg_score', 0),
+                'exam_trend': student.get('exam_trends', {}).get('score_trend', 'no_data'),
+                'recent_exam_count': len(student.get('exam_trends', {}).get('recent_scores', []))
             }
             student_summaries.append(summary)
         
@@ -534,6 +607,8 @@ Analyze patterns like:
 - Consistency levels
 - Weekend vs weekday preferences
 - Study frequency patterns
+- Academic performance (chapter completion, exam scores)
+- Study effectiveness (time spent vs results)
 
 Return a JSON response with an array of clusters:
 {{
@@ -686,10 +761,14 @@ Create 3-5 meaningful clusters that capture the main study patterns in the class
         cache_key = f"gemini_risk:predict_student_risk_and_readiness:{uid}"
         cached_result = CacheManager.get(cache_key)
         if cached_result:
-            logger.info(f"Using cached risk/readiness prediction for student {uid}")
             return cached_result.get('risk'), cached_result.get('readiness')
         
+        # Debug: Starting new AI analysis
+        logger.info(f"🤖 STARTING AI ANALYSIS: Student Risk/Readiness Prediction for UID: {uid[:8]}...")
+        
         try:
+            # Debug: Building student features
+            logger.info(f"📊 BUILDING FEATURES: Collecting academic data for student {uid[:8]}...")
             features = self.build_student_features(uid)
             if not features:
                 return None, None
@@ -726,10 +805,16 @@ Return a single JSON response with both predictions:
                 risk_data = response.get('risk_prediction')
                 readiness_data = response.get('readiness_prediction')
                 
+                # Debug: AI analysis completed successfully
+                logger.info(f"✅ AI ANALYSIS COMPLETED: Generated predictions for student {uid[:8]}")
+                if risk_data:
+                    logger.info(f"🔴 RISK PREDICTION: Level {risk_data.get('risk_level', 'Unknown')} - {risk_data.get('confidence', 'Unknown')} confidence")
+                if readiness_data:
+                    logger.info(f"🟢 READINESS PREDICTION: Score {readiness_data.get('readiness_score', 'Unknown')} - {readiness_data.get('readiness_level', 'Unknown')}")
+                
                 # Cache the result
                 result_to_cache = {'risk': risk_data, 'readiness': readiness_data}
                 CacheManager.set(cache_key, result_to_cache, timeout=3600)  # 1 hour cache
-                logger.info(f"Cached risk/readiness prediction for student {uid}")
                 
                 return risk_data, readiness_data
             else:
@@ -745,10 +830,14 @@ Return a single JSON response with both predictions:
         cache_key = f"gemini_cluster:analyze_class_study_patterns:{class_id}"
         cached_result = CacheManager.get(cache_key)
         if cached_result:
-            logger.info(f"Using cached clustering for class {class_id}")
             return cached_result
         
+        # Debug: Starting class analysis
+        logger.info(f"🤖 STARTING AI ANALYSIS: Class Study Pattern Clustering for Class ID: {class_id[:8]}...")
+        
         try:
+            # Debug: Getting class information
+            logger.info(f"📊 BUILDING FEATURES: Collecting class data for class {class_id[:8]}...")
             # Get class document
             class_doc = db.collection('classes').document(class_id).get()
             if not class_doc.exists:
@@ -775,9 +864,18 @@ Return a single JSON response with both predictions:
             if response and 'clusters' in response:
                 clusters = response['clusters']
                 
+                # Debug: Show actual AI response
+                logger.info(f"🤖 AI RESPONSE: {json.dumps(response, indent=2)}")
+                
+                # Debug: Class clustering completed
+                logger.info(f"✅ AI ANALYSIS COMPLETED: Generated {len(clusters)} clusters for class {class_id[:8]}")
+                for i, cluster in enumerate(clusters):
+                    cluster_size = len(cluster.get('student_uids', []))
+                    cluster_label = cluster.get('label', 'Unknown')
+                    logger.info(f"📊 CLUSTER {i+1}: {cluster_label} - {cluster_size} students")
+                
                 # Cache the result
                 CacheManager.set(cache_key, clusters, timeout=7200)  # 2 hour cache
-                logger.info(f"Cached clustering result for class {class_id}")
                 
                 return clusters
             else:

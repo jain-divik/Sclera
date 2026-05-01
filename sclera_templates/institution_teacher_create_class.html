@@ -3,9 +3,135 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
     <title>Create Class - Teacher | StudyOS</title>
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .create-class-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            padding: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        @media (min-width: 1024px) {
+            .create-class-grid {
+                grid-template-columns: 1fr 360px;
+                max-width: 1000px;
+            }
+        }
+        @media (max-width: 768px) {
+            .create-class-grid {
+                padding: 1.5rem;
+                gap: 1.25rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .create-class-grid {
+                padding: 1rem;
+                gap: 1rem;
+            }
+        }
+        .td-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .td-modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .td-modal {
+            width: min(640px, 100%);
+            max-height: 90vh;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+        }
+        .td-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border-bottom: 1px solid var(--border);
+        }
+        .td-modal-title {
+            font-size: 1rem;
+            font-weight: 800;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .td-modal-close {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 0.5rem;
+            padding: 0.4rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .td-modal-close:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent);
+        }
+        .td-modal-body {
+            padding: 1.25rem;
+            color: var(--text-primary);
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+        .td-modal-footer {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            background: var(--bg-secondary);
+        }
+        .syllabus-preview-modal .td-modal {
+            width: min(800px, 100%);
+        }
+        .syllabus-content {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+        }
+        .success-icon {
+            font-size: 3rem;
+            color: var(--accent);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .invite-code-display {
+            font-family: monospace;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border: 2px dashed var(--border);
+            border-radius: 0.75rem;
+            color: var(--accent);
+            margin: 1rem 0;
+        }
+    </style>
 </head>
 
 <body>
@@ -26,82 +152,140 @@
             {% endif %}
             {% endwith %}
 
-            <div class="academic-split">
-                <div class="syllabus-panel">
-                    <div class="study-island">
-                        <div class="study-island-header">
-                            <h3>Class Details</h3>
-                        </div>
-
-                        <form method="POST" action="{{ url_for('institution_teacher_create_class') }}" id="createClassForm">
-                            <div class="form-group">
-                                <label for="name">Class Name *</label>
-                                <input type="text" id="name" name="name" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="purpose">Purpose *</label>
-                                <select id="purpose" name="purpose" required onchange="updateSyllabusPreview()">
-                                    <option value="">Select Purpose</option>
-                                    <option value="school">School Studies</option>
-                                    <option value="exam">Exam Preparation</option>
-                                </select>
-                            </div>
-                            <div class="form-group" id="boardGroup">
-                                <label for="board">Board *</label>
-                                <select id="board" name="board" onchange="updateGradeOptions()">
-                                    <option value="">Select Board</option>
-                                    <option value="CBSE">CBSE</option>
-                                    <option value="ICSE">ICSE</option>
-                                    <option value="IB">IB</option>
-                                    <option value="IGCSE">IGCSE</option>
-                                    <option value="State">State Board</option>
-                                </select>
-                            </div>
-                            <div class="form-group" id="gradeGroup">
-                                <label for="grade">Grade/Class *</label>
-                                <select id="grade" name="grade" onchange="updatePurposeOptions()">
-                                    <option value="">Select Grade</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group" id="subjectCombinationGroup" style="display: none;">
-                                <label for="subject_combination">Subject Combination</label>
-                                <select id="subject_combination" name="subject_combination" onchange="updateSyllabusPreview()">
-                                    <option value="">Select Subject Combination</option>
-                                    <option value="PCM">Physics, Chemistry, Mathematics</option>
-                                    <option value="PCB">Physics, Chemistry, Biology</option>
-                                    <option value="PCMB">Physics, Chemistry, Mathematics, Biology</option>
-                                    <option value="COMMAT">Commerce with Mathematics</option>
-                                    <option value="COM">Commerce without Mathematics</option>
-                                </select>
-                            </div>
-                            <div class="form-group" id="examTypeGroup" style="display: none;">
-                                <label for="exam_type">Exam Type</label>
-                                <select id="exam_type" name="exam_type" onchange="updateSyllabusPreview()">
-                                    <option value="">Select Exam</option>
-                                    <option value="JEE">JEE</option>
-                                    <option value="NEET">NEET</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Create Class & Generate Invite</button>
-                        </form>
+            <div class="create-class-grid">
+                <!-- Form Island -->
+                <div class="island">
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined" style="color: var(--accent);">class</span>
+                            Class Details
+                        </h3>
                     </div>
+                    <form method="POST" action="{{ url_for('institution_teacher_create_class') }}" id="createClassForm">
+                        <div class="form-group">
+                            <label for="name">Class Name *</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="purpose">Purpose *</label>
+                            <select id="purpose" name="purpose" required onchange="updatePurposeOptions()">
+                                <option value="">Select Purpose</option>
+                                <option value="school">School Studies</option>
+                                <option value="exam">Exam Preparation</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="boardGroup">
+                            <label for="board">Board *</label>
+                            <select id="board" name="board" onchange="updateGradeOptions()">
+                                <option value="">Select Board</option>
+                                <option value="CBSE">CBSE</option>
+                                <option value="ICSE">ICSE</option>
+                                <option value="IB">IB</option>
+                                <option value="IGCSE">IGCSE</option>
+                                <option value="State">State Board</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="gradeGroup">
+                            <label for="grade">Grade/Class *</label>
+                            <select id="grade" name="grade" onchange="updatePurposeOptions()">
+                                <option value="">Select Grade</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="subjectCombinationGroup" style="display: none;">
+                            <label for="subject_combination">Subject Combination</label>
+                            <select id="subject_combination" name="subject_combination">
+                                <option value="">Select Subject Combination</option>
+                                <option value="PCM">Physics, Chemistry, Mathematics</option>
+                                <option value="PCB">Physics, Chemistry, Biology</option>
+                                <option value="PCMB">Physics, Chemistry, Mathematics, Biology</option>
+                                <option value="COMMAT">Commerce with Mathematics</option>
+                                <option value="COM">Commerce without Mathematics</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="examTypeGroup" style="display: none;">
+                            <label for="exam_type">Exam Type</label>
+                            <select id="exam_type" name="exam_type">
+                                <option value="">Select Exam</option>
+                                <option value="JEE">JEE</option>
+                                <option value="NEET">NEET</option>
+                            </select>
+                        </div>
+                        <div style="margin-top: 1.5rem;">
+                            <button type="button" class="btn btn-secondary" onclick="openSyllabusPreview()" style="margin-right: 0.75rem;">
+                                <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.5rem;">menu_book</span>
+                                Preview Syllabus
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.5rem;">add</span>
+                                Create Class & Generate Invite
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
-                <div class="study-tools-panel">
-                    <div class="study-island">
-                        <div class="study-island-header">
-                            <h3>Syllabus Preview</h3>
-                        </div>
-                        <div id="syllabusPreview">
-                            <p style="color:var(--text-muted); font-size:14px; line-height:1.6;">
-                                Select board, grade, and purpose to preview the syllabus that will be used for this class.
-                            </p>
-                        </div>
+                <!-- Quick Tips Island -->
+                <div class="island">
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined" style="color: var(--accent);">tips_and_updates</span>
+                            Quick Tips
+                        </h3>
+                    </div>
+                    <div class="info-card">
+                        <h4>
+                            <span class="material-symbols-outlined" style="color: var(--accent);">school</span>
+                            School Studies
+                        </h4>
+                        <p>Select board and grade to get a structured curriculum for regular classroom teaching.</p>
+                    </div>
+                    <div class="info-card">
+                        <h4>
+                            <span class="material-symbols-outlined" style="color: var(--accent);">quiz</span>
+                            Exam Preparation
+                        </h4>
+                        <p>Choose exam type for focused test preparation with targeted syllabus.</p>
+                    </div>
+                    <div class="info-card">
+                        <h4>
+                            <span class="material-symbols-outlined" style="color: var(--accent);">preview</span>
+                            Preview First
+                        </h4>
+                        <p>Always preview the syllabus before creating to ensure it matches your needs.</p>
                     </div>
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Syllabus Preview Modal -->
+    <div id="syllabusModal" class="td-modal-overlay" aria-hidden="true">
+        <div class="td-modal" role="dialog" aria-modal="true" aria-labelledby="syllabusModalTitle">
+            <div class="td-modal-header">
+                <h3 id="syllabusModalTitle" class="td-modal-title"></h3>
+                <button type="button" class="td-modal-close" data-modal-close="syllabusModal">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="syllabusModalBody" class="td-modal-body"></div>
+            <div class="td-modal-footer">
+                <button type="button" class="btn btn-primary" data-modal-close="syllabusModal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="td-modal-overlay" aria-hidden="true">
+        <div class="td-modal" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
+            <div class="td-modal-header">
+                <h3 id="successModalTitle" class="td-modal-title"></h3>
+                <button type="button" class="td-modal-close" data-modal-close="successModal">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="successModalBody" class="td-modal-body"></div>
+            <div id="successModalFooter" class="td-modal-footer"></div>
+        </div>
     </div>
 
     <script>
@@ -110,6 +294,43 @@
             const savedTheme = localStorage.getItem("sclera-theme");
             if (savedTheme) root.setAttribute("data-theme", savedTheme);
         })();
+
+        // Modal helpers (reuse pattern from other teacher pages)
+        function openModal(modalId, { title, bodyHtml, footerHtml }) {
+            const modal = document.getElementById(modalId);
+            const titleEl = document.getElementById(modalId + 'Title');
+            const bodyEl = document.getElementById(modalId + 'Body');
+            const footerEl = document.getElementById(modalId + 'Footer');
+            if (titleEl) titleEl.innerHTML = title || '';
+            if (bodyEl) bodyEl.innerHTML = bodyHtml || '';
+            if (footerEl) footerEl.innerHTML = footerHtml || '';
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        // Close on overlay click or close button
+        document.querySelectorAll('[data-modal-close]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modalId = e.target.closest('[data-modal-close]').dataset.modalClose;
+                closeModal(modalId);
+            });
+        });
+
+        // Escape key closes modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.td-modal-overlay.open').forEach(openModal => {
+                    const modalId = openModal.id;
+                    closeModal(modalId);
+                });
+            }
+        });
 
         // Grade options based on board
         const gradeOptions = {
@@ -120,199 +341,152 @@
             'State': ['8', '9', '10', '11', '12']
         };
 
-        // Syllabus data cache
-        let syllabusCache = {};
-
         function updateGradeOptions() {
             const board = document.getElementById('board').value;
             const gradeSelect = document.getElementById('grade');
-            const purposeSelect = document.getElementById('purpose');
+            const gradeGroup = document.getElementById('gradeGroup');
             
-            // Clear current options
             gradeSelect.innerHTML = '<option value="">Select Grade</option>';
-            purposeSelect.innerHTML = '<option value="">Select Purpose</option>';
             
-            if (board) {
-                // Add grade options
+            if (board && gradeOptions[board]) {
+                gradeGroup.style.display = 'block';
                 gradeOptions[board].forEach(grade => {
                     const option = document.createElement('option');
                     option.value = grade;
-                    option.textContent = grade === '11' || grade === '12' ? `Class ${grade} (Select Subject Combination)` : `Class ${grade}`;
+                    option.textContent = `Grade ${grade}`;
                     gradeSelect.appendChild(option);
                 });
+            } else {
+                gradeGroup.style.display = 'none';
             }
-            
-            // Hide exam type group
-            document.getElementById('examTypeGroup').style.display = 'none';
-            updateSyllabusPreview();
+            updatePurposeOptions();
         }
 
         function updatePurposeOptions() {
+            const purpose = document.getElementById('purpose').value;
             const board = document.getElementById('board').value;
             const grade = document.getElementById('grade').value;
-            const purpose = document.getElementById('purpose').value;
-            const purposeSelect = document.getElementById('purpose');
-            
-            purposeSelect.innerHTML = '<option value="">Select Purpose</option>';
-            
-            // Always show both options for all grades
-            purposeSelect.innerHTML += '<option value="school">School Studies</option>';
-            purposeSelect.innerHTML += '<option value="exam">Exam Preparation</option>';
-            
-            // Hide/show board and grade based on purpose
             const boardGroup = document.getElementById('boardGroup');
             const gradeGroup = document.getElementById('gradeGroup');
+            const subjectGroup = document.getElementById('subjectCombinationGroup');
+            const examGroup = document.getElementById('examTypeGroup');
             
             if (purpose === 'exam') {
-                // Hide board and grade for exam purpose
                 boardGroup.style.display = 'none';
                 gradeGroup.style.display = 'none';
-            } else {
-                // Show board and grade for school purpose
+                subjectGroup.style.display = 'none';
+                examGroup.style.display = 'block';
+            } else if (purpose === 'school') {
                 boardGroup.style.display = 'block';
-                gradeGroup.style.display = 'block';
+                gradeGroup.style.display = board ? 'block' : 'none';
+                examGroup.style.display = 'none';
+                
+                if (board === 'CBSE' && (grade === '11' || grade === '12')) {
+                    subjectGroup.style.display = 'block';
+                } else {
+                    subjectGroup.style.display = 'none';
+                }
+            } else {
+                boardGroup.style.display = 'block';
+                gradeGroup.style.display = 'none';
+                subjectGroup.style.display = 'none';
+                examGroup.style.display = 'none';
             }
-            
-            // Hide conditional groups
-            document.getElementById('subjectCombinationGroup').style.display = 'none';
-            document.getElementById('examTypeGroup').style.display = 'none';
-            updateSyllabusPreview();
         }
 
-        function updateSyllabusPreview() {
+        function openSyllabusPreview() {
+            const purpose = document.getElementById('purpose').value;
             const board = document.getElementById('board').value;
             const grade = document.getElementById('grade').value;
-            const purpose = document.getElementById('purpose').value;
-            const examType = document.getElementById('exam_type').value;
             const subjectCombination = document.getElementById('subject_combination').value;
-            const previewDiv = document.getElementById('syllabusPreview');
+            const examType = document.getElementById('exam_type').value;
             
-            // Show/hide conditional groups
-            const subjectCombinationGroup = document.getElementById('subjectCombinationGroup');
-            const examTypeGroup = document.getElementById('examTypeGroup');
+            let syllabusContent = '';
+            let title = 'Syllabus Preview';
             
-            if (purpose === 'school' && board === 'CBSE' && (grade === '11' || grade === '12')) {
-                subjectCombinationGroup.style.display = 'block';
+            if (purpose === 'exam' && examType) {
+                title = `Syllabus: ${examType} Exam Preparation`;
+                syllabusContent = getExamSyllabus(examType);
+            } else if (purpose === 'school' && board && grade) {
+                title = `Syllabus: ${board} Grade ${grade}`;
+                if (subjectCombination) title += ` (${subjectCombination})`;
+                syllabusContent = getSchoolSyllabus(board, grade, subjectCombination);
             } else {
-                subjectCombinationGroup.style.display = 'none';
+                syllabusContent = 'Please complete all required fields to preview the syllabus.';
             }
             
-            if (purpose === 'exam') {
-                examTypeGroup.style.display = 'block';
-            } else {
-                examTypeGroup.style.display = 'none';
-            }
-            
-            // Validation logic - different requirements for exam vs school
-            if (purpose === 'exam') {
-                if (!examType) {
-                    previewDiv.innerHTML = '<p style="color:var(--text-muted); font-size:14px; line-height:1.6;">Select exam type to preview the syllabus.</p>';
-                    return;
-                }
-            } else if (purpose === 'school') {
-                if (!board || !grade) {
-                    previewDiv.innerHTML = '<p style="color:var(--text-muted); font-size:14px; line-height:1.6;">Select board and grade to preview the syllabus.</p>';
-                    return;
-                }
-                if (board === 'CBSE' && (grade === '11' || grade === '12') && !subjectCombination) {
-                    previewDiv.innerHTML = '<p style="color:var(--text-muted); font-size:14px; line-height:1.6;">Select subject combination to preview the syllabus.</p>';
-                    return;
-                }
-            } else {
-                previewDiv.innerHTML = '<p style="color:var(--text-muted); font-size:14px; line-height:1.6;">Select purpose to preview the syllabus.</p>';
-                return;
-            }
-            
-            // Show loading
-            previewDiv.innerHTML = '<p style="color:var(--text-muted); font-size:14px; line-height:1.6;">Loading syllabus...</p>';
-            
-            // Build API URL
-            let apiUrl = `/api/syllabus?purpose=${purpose}`;
-            
-            if (purpose === 'school') {
-                apiUrl += `&board=${board}&grade=${grade}`;
-                if (board === 'CBSE' && (grade === '11' || grade === '12') && subjectCombination) {
-                    apiUrl += `&subject_combination=${subjectCombination}`;
-                }
-            } else if (purpose === 'exam') {
-                apiUrl += `&exam=${examType}`;
-                // Add grade as optional parameter for potential future use
-                if (grade) {
-                    apiUrl += `&grade=${grade}`;
-                }
-            }
-            
-            // Fetch syllabus data
-            const cacheKey = `${purpose}_${purpose === 'exam' ? examType : board}_${grade}_${subjectCombination || ''}`;
-            
-            if (syllabusCache[cacheKey]) {
-                displaySyllabus(syllabusCache[cacheKey]);
-                return;
-            }
-            
-            // Make API call to get syllabus
-            console.log('Fetching syllabus from:', apiUrl);
-            fetch(apiUrl)
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Syllabus data received:', data);
-                    syllabusCache[cacheKey] = data;
-                    displaySyllabus(data);
-                })
-                .catch(error => {
-                    console.error('Error fetching syllabus:', error);
-                    previewDiv.innerHTML = `<p style="color:var(--error); font-size:14px; line-height:1.6;">Error loading syllabus: ${error.message}. Please try again.</p>`;
-                });
+            // Convert \n to <br> for better HTML rendering while preserving structure
+            const formattedContent = syllabusContent.replace(/\n/g, '<br>');
+            const body = `<div class="syllabus-content">${formattedContent}</div>`;
+            openModal('syllabusModal', { title, bodyHtml: body });
         }
 
-        function displaySyllabus(syllabus) {
-            const previewDiv = document.getElementById('syllabusPreview');
-            
-            if (!syllabus || Object.keys(syllabus).length === 0) {
-                previewDiv.innerHTML = '<p style="color:var(--text-muted); font-size:14px; line-height:1.6;">No syllabus data available for the selected combination.</p>';
-                return;
-            }
-            
-            let html = '<div style="max-height: 400px; overflow-y: auto;">';
-            
-            for (const [subject, subjectData] of Object.entries(syllabus)) {
-                html += `<details style="margin-bottom: 12px; border: 1px solid var(--border); border-radius: 6px; padding: 8px;">`;
-                html += `<summary style="font-weight: 600; color: var(--text-primary); cursor: pointer;">${subject}</summary>`;
-                
-                if (subjectData.chapters && Object.keys(subjectData.chapters).length > 0) {
-                    html += '<div style="margin-top: 8px; padding-left: 16px;">';
-                    for (const [chapterName, chapterData] of Object.entries(subjectData.chapters)) {
-                        html += `<div style="padding: 4px 0; color: var(--text-secondary); font-size: 13px;">`;
-                        html += `• ${chapterName}`;
-                        if (chapterData.topics && chapterData.topics.length > 0) {
-                            html += `<div style="padding-left: 16px; margin-top: 2px; color: var(--text-muted); font-size: 12px;">`;
-                            html += chapterData.topics.slice(0, 3).join(', ');
-                            if (chapterData.topics.length > 3) {
-                                html += `... (+${chapterData.topics.length - 3} more)`;
-                            }
-                            html += '</div>';
-                        }
-                        html += '</div>';
-                    }
-                    html += '</div>';
-                }
-                
-                html += '</details>';
-            }
-            
-            html += '</div>';
-            html += '<p style="color:var(--text-muted); font-size:12px; margin-top: 12px;">This syllabus will be used for your class. You can manage chapter exclusions after creating the class.</p>';
-            
-            previewDiv.innerHTML = html;
+        function getExamSyllabus(examType) {
+            const syllabusMap = {
+                'JEE': `Physics:\n- Mechanics and Kinematics\n- Thermodynamics\n- Electrostatics and Current Electricity\n- Magnetism and Electromagnetic Induction\n- Optics\n- Modern Physics\n\nChemistry:\n- Physical Chemistry (Stoichiometry, States of Matter, Thermodynamics)\n- Inorganic Chemistry (Periodic Properties, Chemical Bonding, Elements)\n- Organic Chemistry (Basic Principles, Hydrocarbons, Functional Groups)\n\nMathematics:\n- Algebra (Quadratic Equations, Sequences, Series)\n- Coordinate Geometry (Straight Lines, Circles, Conics)\n- Calculus (Limits, Derivatives, Integrals)\n- Trigonometry and Vectors`,
+                'NEET': `Physics:\n- Physical World and Measurement\n- Kinematics and Laws of Motion\n- Work, Energy, and Power\n- Thermodynamics\n- Electrostatics and Current Electricity\n- Magnetic Effects of Current\n- Optics\n\nChemistry:\n- Basic Concepts of Chemistry\n- Structure of Atom\n- Classification of Elements and Periodicity\n- Chemical Bonding and Molecular Structure\n- States of Matter\n- Thermodynamics\n- Equilibrium\n- Organic Chemistry Basics\n\nBiology:\n- Diversity in Living World\n- Structural Organization in Animals and Plants\n- Cell Structure and Function\n- Plant Physiology\n- Human Physiology`
+            };
+            return syllabusMap[examType] || 'Syllabus not available.';
         }
 
-        // Handle form submission
+        function getSchoolSyllabus(board, grade, subjectCombination) {
+            const baseSyllabus = {
+                '8': `Mathematics:\n- Rational Numbers\n- Linear Equations in One Variable\n- Understanding Quadrilaterals\n- Practical Geometry\n- Data Handling\n- Squares and Square Roots\n- Cubes and Cube Roots\n- Comparing Quantities\n- Algebraic Expressions and Identities\n- Visualizing Solid Shapes\n- Mensuration\n- Exponents and Powers\n- Direct and Inverse Proportions\n\nScience:\n- Crop Production and Management\n- Microorganisms: Friend and Foe\n- Synthetic Fibres and Plastics\n- Materials: Metals and Non-Metals\n- Coal and Petroleum\n- Combustion and Flame\n- Conservation of Plants and Animals\n- Cell Structure and Functions\n- Reproduction in Animals\n- Reaching the Age of Adolescence\n\nSocial Science:\n- Resources and Development\n- Land, Soil, Water, Natural Vegetation\n- Mineral and Power Resources\n- Industries\n- Human Resources\n- How, When and Where\n- From Trade to Territory\n- Ruling the Countryside\n- Tribals, Dikus and the Vision of a Golden Age\n- When People Rebel\n- Colonialism and the City\n- Weavers, Iron Smelters and Factory Owners\n- Civilising the Native, Educating the Nation\n- Women, Caste and Reform`,
+                '9': `Mathematics:\n- Number Systems\n- Polynomials\n- Coordinate Geometry\n- Linear Equations in Two Variables\n- Introduction to Euclid's Geometry\n- Lines and Angles\n- Triangles\n- Quadrilaterals\n- Area of Parallelograms and Triangles\n- Circles\n- Constructions\n- Heron's Formula\n- Surface Areas and Volumes\n- Statistics\n- Probability\n\nScience:\n- Matter in Our Surroundings\n- Is Matter Around Us Pure?\n- Atoms and Molecules\n- Structure of the Atom\n- The Fundamental Unit of Life\n- Tissues\n- Diversity in Living Organisms\n- Motion\n- Force and Laws of Motion\n- Gravitation\n- Work and Energy\n- Sound\n- Why Do We Fall Ill?\n- Natural Resources\n- Improvement in Food Resources\n\nSocial Science:\n- India: Size and Location\n- Physical Features of India\n- Drainage\n- Climate\n- Natural Vegetation and Wildlife\n- Population\n- Democracy in the Contemporary World\n- What is Democracy? Why Democracy?\n- Constitutional Design\n- Electoral Politics\n- Working of Institutions\n- Democratic Rights\n- The French Revolution\n- Socialism in Europe and the Russian Revolution\n- Nazism and the Rise of Hitler\n- Forest Society and Colonialism\n- Pastoralists in the Modern World\n- Peasants and Farmers\n- History and Sport: The Story of Cricket\n- Clothing: A Social History`,
+                '10': `Mathematics:\n- Real Numbers\n- Polynomials\n- Pair of Linear Equations in Two Variables\n- Quadratic Equations\n- Arithmetic Progressions\n- Triangles\n- Coordinate Geometry\n- Introduction to Trigonometry\n- Some Applications of Trigonometry\n- Circles\n- Constructions\n- Areas Related to Circles\n- Surface Areas and Volumes\n- Statistics\n- Probability\n\nScience:\n- Chemical Reactions and Equations\n- Acids, Bases and Salts\n- Metals and Non-Metals\n- Carbon and its Compounds\n- Periodic Classification of Elements\n- Life Processes\n- Control and Coordination\n- How do Organisms Reproduce?\n- Heredity and Evolution\n- Light – Reflection and Refraction\n- The Human Eye and the Colourful World\n- Electricity\n- Magnetic Effects of Electric Current\n- Sources of Energy\n- Our Environment\n- Sustainable Management of Natural Resources\n\nSocial Science:\n- Resources and Development\n- Forest and Wildlife Resources\n- Water Resources\n- Agriculture\n- Minerals and Energy Resources\n- Manufacturing Industries\n- Lifelines of National Economy\n- Development\n- Sectors of the Indian Economy\n- Money and Credit\n- Globalization and the Indian Economy\n- Consumer Rights\n- The Rise of Nationalism in Europe\n- Nationalism in India\n- The Making of a Global World\n- The Age of Industrialisation\n- Work, Life and Leisure\n- Print Culture and the Modern World\n- Novels, Society, and History`
+            };
+            
+            const subjectExtensions = {
+                'PCM': { '11': `Physics:\n- Physical World and Measurement\n- Kinematics\n- Laws of Motion\n- Work, Energy, and Power\n- Motion of System of Particles and Rigid Body\n- Gravitation\n- Properties of Bulk Matter\n- Thermodynamics\n- Behavior of Perfect Gas and Kinetic Theory\n- Oscillations and Waves\n\nChemistry:\n- Some Basic Concepts of Chemistry\n- Structure of Atom\n- Classification of Elements and Periodicity in Properties\n- Chemical Bonding and Molecular Structure\n- States of Matter\n- Thermodynamics\n- Equilibrium\n- Redox Reactions\n- Hydrogen\n- s-Block Elements\n- Some p-Block Elements\n- Organic Chemistry: Basic Principles and Techniques\n- Hydrocarbons\n- Environmental Chemistry\n\nMathematics:\n- Sets and Functions\n- Algebra\n- Coordinate Geometry\n- Calculus\n- Mathematical Reasoning\n- Statistics and Probability`,
+                    '12': `Physics:\n- Electrostatics\n- Current Electricity\n- Magnetic Effects of Current and Magnetism\n- Electromagnetic Induction and Alternating Currents\n- Electromagnetic Waves\n- Optics\n- Dual Nature of Matter and Radiation\n- Atoms and Nuclei\n- Electronic Devices\n- Communication Systems\n\nChemistry:\n- Solutions\n- Electrochemistry\n- Chemical Kinetics\n- Surface Chemistry\n- General Principles and Processes of Isolation of Elements\n- p-Block Elements\n- d and f Block Elements\n- Coordination Compounds\n- Haloalkanes and Haloarenes\n- Alcohols, Phenols, and Ethers\n- Aldehydes, Ketones, and Carboxylic Acids\n- Organic Compounds Containing Nitrogen\n- Biomolecules\n- Polymers\n- Chemistry in Everyday Life\n\nMathematics:\n- Relations and Functions\n- Inverse Trigonometric Functions\n- Matrices and Determinants\n- Continuity and Differentiability\n- Application of Derivatives\n- Integrals\n- Application of Integrals\n- Differential Equations\n- Vector Algebra\n- Three Dimensional Geometry\n- Linear Programming\n- Probability` },
+                'PCB': { '11': `Physics:\n- Physical World and Measurement\n- Kinematics\n- Laws of Motion\n- Work, Energy, and Power\n- Motion of System of Particles and Rigid Body\n- Gravitation\n- Properties of Bulk Matter\n- Thermodynamics\n- Behavior of Perfect Gas and Kinetic Theory\n- Oscillations and Waves\n\nChemistry:\n- Some Basic Concepts of Chemistry\n- Structure of Atom\n- Classification of Elements and Periodicity in Properties\n- Chemical Bonding and Molecular Structure\n- States of Matter\n- Thermodynamics\n- Equilibrium\n- Redox Reactions\n- Hydrogen\n- s-Block Elements\n- Some p-Block Elements\n- Organic Chemistry: Basic Principles and Techniques\n- Hydrocarbons\n- Environmental Chemistry\n\nBiology:\n- Diversity in the Living World\n- Structural Organization in Plants and Animals\n- Cell Structure and Function\n- Plant Physiology\n- Human Physiology`,
+                    '12': `Physics:\n- Electrostatics\n- Current Electricity\n- Magnetic Effects of Current and Magnetism\n- Electromagnetic Induction and Alternating Currents\n- Electromagnetic Waves\n- Optics\n- Dual Nature of Matter and Radiation\n- Atoms and Nuclei\n- Electronic Devices\n- Communication Systems\n\nChemistry:\n- Solutions\n- Electrochemistry\n- Chemical Kinetics\n- Surface Chemistry\n- General Principles and Processes of Isolation of Elements\n- p-Block Elements\n- d and f Block Elements\n- Coordination Compounds\n- Haloalkanes and Haloarenes\n- Alcohols, Phenols, and Ethers\n- Aldehydes, Ketones, and Carboxylic Acids\n- Organic Compounds Containing Nitrogen\n- Biomolecules\n- Polymers\n- Chemistry in Everyday Life\n\nBiology:\n- Reproduction in Organisms\n- Sexual Reproduction in Flowering Plants\n- Human Reproduction\n- Reproductive Health\n- Principles of Inheritance and Variation\n- Molecular Basis of Inheritance\n- Evolution\n- Human Health and Diseases\n- Strategies for Enhancement in Food Production\n- Microbes in Human Welfare\n- Biotechnology: Principles and Processes\n- Biotechnology and its Applications` }
+            };
+            
+            let syllabus = baseSyllabus[grade] || '';
+            
+            if (board === 'CBSE' && subjectCombination && subjectExtensions[subjectCombination] && subjectExtensions[subjectCombination][grade]) {
+                syllabus = subjectExtensions[subjectCombination][grade];
+            }
+            
+            return syllabus || 'Syllabus not available for selected combination.';
+        }
+
+        function showSuccessModal(className, inviteCode) {
+            const title = `<span class="material-symbols-outlined" style="color: var(--accent);">check_circle</span> Class Created Successfully`;
+            const body = `
+                <div class="success-icon">
+                    <span class="material-symbols-outlined">check_circle</span>
+                </div>
+                <div class="invite-code-display">${inviteCode}</div>
+                <p style="text-align: center; font-size: 0.95rem; line-height: 1.5; margin-top: 1rem;">
+                    Share this invite code with your students to join the class.<br>
+                    The code can be reused by multiple students.
+                </p>
+            `;
+            const footerHtml = `
+                <button type="button" class="btn btn-secondary" data-modal-close="successModal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="copyInviteCode('${inviteCode}')">Copy Code</button>
+                <button type="button" class="btn btn-primary" onclick="window.location.href='/institution/teacher/classes'">View Classes</button>
+            `;
+            openModal('successModal', { title, bodyHtml: body, footerHtml });
+        }
+
+        function copyInviteCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                // Show a quick toast or update the modal
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 1500);
+            }).catch(() => {
+                console.error('Failed to copy invite code');
+            });
+        }
+
+        // Form validation and submission
         document.getElementById('createClassForm').addEventListener('submit', function(e) {
             const purpose = document.getElementById('purpose').value;
             const examType = document.getElementById('exam_type').value;
@@ -322,24 +496,24 @@
             
             if (purpose === 'exam' && !examType) {
                 e.preventDefault();
-                alert('Please select an exam type for exam preparation.');
+                openModal('syllabusModal', { title: 'Validation Error', bodyHtml: '<p>Please select an exam type for exam preparation.</p>' });
                 return;
             }
             
             if (purpose === 'school') {
                 if (!board) {
                     e.preventDefault();
-                    alert('Please select a board for school studies.');
+                    openModal('syllabusModal', { title: 'Validation Error', bodyHtml: '<p>Please select a board for school studies.</p>' });
                     return;
                 }
                 if (!grade) {
                     e.preventDefault();
-                    alert('Please select a grade for school studies.');
+                    openModal('syllabusModal', { title: 'Validation Error', bodyHtml: '<p>Please select a grade for school studies.</p>' });
                     return;
                 }
                 if (board === 'CBSE' && (grade === '11' || grade === '12') && !subjectCombination) {
                     e.preventDefault();
-                    alert('Please select a subject combination for CBSE Class 11-12.');
+                    openModal('syllabusModal', { title: 'Validation Error', bodyHtml: '<p>Please select a subject combination for CBSE Class 11-12.</p>' });
                     return;
                 }
             }
@@ -348,6 +522,18 @@
             if (purpose === 'exam') {
                 document.getElementById('board').removeAttribute('required');
                 document.getElementById('grade').removeAttribute('required');
+            }
+        });
+
+        // Check for success parameters in URL and show success modal
+        window.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const className = urlParams.get('class');
+            const inviteCode = urlParams.get('code');
+            if (className && inviteCode) {
+                showSuccessModal(className, inviteCode);
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
         });
     </script>

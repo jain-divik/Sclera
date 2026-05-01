@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
-        .dashboard-grid {
+        .teacher-classes-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1.5rem;
@@ -212,9 +212,134 @@
             border-color: #3b82f6;
             color: #3b82f6;
         }
+        .td-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .td-modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .td-modal {
+            width: min(640px, 100%);
+            max-height: 90vh;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+        }
+        .td-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border-bottom: 1px solid var(--border);
+        }
+        .td-modal-title {
+            font-size: 1rem;
+            font-weight: 800;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .td-modal-close {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 0.5rem;
+            padding: 0.4rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .td-modal-close:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent);
+        }
+        .td-modal-body {
+            padding: 1.25rem;
+            color: var(--text-primary);
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+        .td-modal-footer {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            background: var(--bg-secondary);
+        }
+        .td-modal-kv {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+        }
+        .td-modal-kv .k {
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+        .td-modal-kv .v {
+            color: var(--text-primary);
+        }
+        .td-modal-textarea {
+            width: 100%;
+            min-height: 120px;
+            resize: vertical;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .td-modal-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .invite-code-display {
+            font-family: monospace;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border: 2px dashed var(--border);
+            border-radius: 0.75rem;
+            color: var(--accent);
+            margin: 1rem 0;
+        }
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .modal-actions .btn {
+            justify-content: flex-start;
+            text-align: left;
+        }
+        .modal-actions .btn-danger {
+            margin-top: 0.5rem;
+        }
         
         @media (max-width: 768px) {
-            .dashboard-grid {
+            .teacher-classes-grid {
                 grid-template-columns: 1fr;
                 padding: 1rem;
             }
@@ -250,7 +375,7 @@
                 {% endif %}
             {% endwith %}
 
-            <div class="dashboard-grid">
+            <div class="teacher-classes-grid">
                 <!-- Classes List -->
                 <div class="island" style="grid-column: span 2;">
                     <div class="island-header">
@@ -288,24 +413,14 @@
                                         {% endif %}
                                     </div>
                                     <div class="class-actions">
-                                        <a href="{{ url_for('manage_class_syllabus', class_id=cls.id) }}" class="btn btn-secondary">
-                                            <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.25rem;">menu_book</span>
-                                            Syllabus
+                                        <button type="button" class="btn btn-primary manage-class-btn" data-payload="{{ { 'class_id': cls.id, 'name': cls.get('name', cls.get('id')), 'invite_code': cls.get('invite_code', '') }|tojson|urlencode }}">
+                                            <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.5rem;">settings</span>
+                                            Manage
+                                        </button>
+                                        <a href="{{ url_for('institution_teacher_upload_file', class_id=cls.id) }}" class="btn btn-secondary">
+                                            <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.5rem;">upload_file</span>
+                                            Upload
                                         </a>
-                                        <a href="{{ url_for('generate_class_report', class_id=cls.id) }}"class="btn btn-secondary" title="Download PDF Report">
-                                            <span class="material-symbols-outlined" style="font-size:.9rem">picture_as_pdf</span>
-                                            Report
-                                        </a>
-                                        <a href="{{ url_for('custom_syllabus_upload', class_id=cls.id) }}" class="btn btn-secondary">
-                                            <span class="material-symbols-outlined" style="font-size:.9rem">add_circle</span>
-                                            Custom Syllabus
-                                        </a>
-                                        <form method="POST" action="{{ url_for('delete_class', class_id=cls.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this class? This action cannot be undone and will remove all students from the class.');">
-                                            <button type="submit" class="btn btn-danger">
-                                                <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.25rem;">delete</span>
-                                                Delete
-                                            </button>
-                                        </form>
                                     </div>
                                 </div>
                                 <div class="class-stats">
@@ -367,12 +482,155 @@
         </main>
     </div>
 
+    <div id="modalOverlay" class="td-modal-overlay" aria-hidden="true">
+        <div class="td-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="td-modal-header">
+                <h3 id="modalTitle" class="td-modal-title"></h3>
+                <button type="button" class="td-modal-close" data-modal-close>
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="modalBody" class="td-modal-body"></div>
+            <div id="modalFooter" class="td-modal-footer"></div>
+        </div>
+    </div>
+
     <script>
         (function () {
             const root = document.documentElement;
             const savedTheme = localStorage.getItem("sclera-theme");
             if (savedTheme) root.setAttribute("data-theme", savedTheme);
         })();
+
+        // Modal helpers (reuse pattern from dashboard)
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const modalFooter = document.getElementById('modalFooter');
+
+        function openModal({ title, bodyHtml, footerHtml }) {
+            modalTitle.innerHTML = title || '';
+            modalBody.innerHTML = bodyHtml || '';
+            modalFooter.innerHTML = footerHtml || '';
+            modalOverlay.classList.add('open');
+            modalOverlay.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeModal() {
+            modalOverlay.classList.remove('open');
+            modalOverlay.setAttribute('aria-hidden', 'true');
+            modalTitle.textContent = '';
+            modalBody.innerHTML = '';
+            modalFooter.innerHTML = '';
+        }
+
+        // Close on overlay click or close button
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay || e.target.closest('[data-modal-close]')) {
+                closeModal();
+            }
+        });
+
+        // Escape key closes modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalOverlay.classList.contains('open')) {
+                closeModal();
+            }
+        });
+
+        // Utility: escape HTML
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Manage Class modal
+        function openManageModal(payload) {
+            const p = payload || {};
+            const title = `<span class="material-symbols-outlined" style="color: var(--accent);">settings</span> ${escapeHtml(p.name || 'Class')}`;
+            const inviteCode = p.invite_code || '';
+            const classId = p.class_id || '';
+            const body = `
+                <div class="invite-code-display">${escapeHtml(inviteCode)}</div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-primary" onclick="copyInviteCode('${escapeHtml(inviteCode)}')">
+                        <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.5rem;">content_copy</span>
+                        Copy Invite Code
+                    </button>
+                    <a href="/institution/class/${escapeHtml(classId)}/syllabus" class="btn btn-secondary">
+                        <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.5rem;">menu_book</span>
+                        View Syllabus
+                    </a>
+                    <a href="/institution/teacher/class/${escapeHtml(classId)}/report" class="btn btn-secondary">
+                        <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.5rem;">picture_as_pdf</span>
+                        Download Report
+                    </a>
+                    <a href="/institution/class/${escapeHtml(classId)}/custom-syllabus" class="btn btn-secondary">
+                        <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.5rem;">add_circle</span>
+                        Custom Syllabus
+                    </a>
+                    <button type="button" class="btn btn-danger" onclick="confirmDeleteClass('${escapeHtml(classId)}', '${escapeHtml(p.name || '')}')">
+                        <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.5rem;">delete</span>
+                        Delete Class
+                    </button>
+                </div>
+            `;
+            openModal({ title, bodyHtml: body, footerHtml: `<button type="button" class="btn btn-secondary" data-modal-close>Close</button>` });
+        }
+
+        // Copy invite code
+        function copyInviteCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                showStatusModal({ title: 'Copied!', message: 'Invite code copied to clipboard.' });
+            }).catch(() => {
+                showStatusModal({ title: 'Error', message: 'Failed to copy invite code.' });
+            });
+        }
+
+        // Delete class confirmation modal
+        function confirmDeleteClass(classId, className) {
+            const title = `<span class="material-symbols-outlined" style="color: #ef4444;">warning</span> Delete Class`;
+            const body = `
+                <div class="td-modal-kv">
+                    <div class="k">Class</div><div class="v">${escapeHtml(className || 'Unknown')}</div>
+                    <div class="k">Students</div><div class="v">All students will be removed from this class</div>
+                    <div class="k">Data</div><div class="v">This action cannot be undone</div>
+                </div>
+                <p style="margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">Are you sure you want to permanently delete this class?</p>
+            `;
+            const footerHtml = `
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="performDeleteClass('${escapeHtml(classId)}')">Delete Class</button>
+            `;
+            openModal({ title, bodyHtml: body, footerHtml });
+        }
+
+        // Perform delete (submit hidden form)
+        function performDeleteClass(classId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/institution/teacher/class/${classId}/delete`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Simple status modal helper
+        function showStatusModal({ title, message }) {
+            openModal({
+                title,
+                bodyHtml: `<p style="font-size: 0.95rem; line-height: 1.5;">${escapeHtml(message || '')}</p>`,
+                footerHtml: `<button type="button" class="btn btn-primary" data-modal-close>OK</button>`
+            });
+        }
+
+        // Wire up Manage buttons
+        document.querySelectorAll('.manage-class-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const payload = JSON.parse(decodeURIComponent(btn.dataset.payload || '{}'));
+                openManageModal(payload);
+            });
+        });
     </script>
 </body>
 </html>

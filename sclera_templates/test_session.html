@@ -41,205 +41,370 @@
             transform: scale(1.2); 
         }
 
-        /* Option card */
-        .option-card {
-            display: flex; align-items: flex-start; gap: 0.875rem;
-            padding: 0.875rem 1rem; border-radius: 0.875rem;
-            border: 1.5px solid var(--border);
-            background: var(--bg-secondary);
-            cursor: pointer; transition: border-color 0.15s, background 0.15s;
-            user-select: none;
-        }
-        .option-card:hover:not(.locked) { border-color: var(--accent); background: var(--bg-hover); }
-        .option-card.selected  { border-color: var(--accent); background: var(--bg-hover); }
-        .option-card.correct   { border-color: var(--success) !important; background: var(--success-bg) !important; cursor: default; }
-        .option-card.wrong     { border-color: var(--error)   !important; background: var(--error-bg)   !important; cursor: default; }
-        .option-card.show-correct { border-color: var(--success) !important; background: var(--success-bg) !important; cursor: default; }
-        .option-card.locked    { cursor: default; }
-        
-        /* Button styles */
-        .btn-secondary {
-            padding: 0.75rem 1.5rem; border-radius: 0.875rem;
-            border: 1.5px solid var(--border); background: var(--bg-secondary);
-            color: var(--text-primary); font-weight: 600;
-            cursor: pointer; transition: all 0.15s;
-        }
-        .btn-secondary:hover:not(:disabled) { 
-            border-color: var(--accent); background: var(--bg-hover); 
-        }
-        .btn-secondary:disabled { 
-            opacity: 0.4; cursor: not-allowed; 
-        }
-        
-        /* Enhanced option card animations */
-        .option-card {
-            display: flex; align-items: flex-start; gap: 0.875rem;
-            padding: 0.875rem 1rem; border-radius: 0.875rem;
-            border: 1.5px solid var(--border);
-            background: var(--bg-secondary);
-            cursor: pointer; transition: all 0.2s ease;
-            user-select: none; position: relative;
-        }
-        .option-card:hover:not(.locked) { 
-            border-color: var(--accent); background: var(--bg-hover);
-            transform: translateY(-1px);
-        }
-        .option-card.selected  { 
-            border-color: var(--accent); background: var(--accent-bg);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.15);
-        }
-        .option-card.correct   { 
-            border-color: var(--success) !important; 
-            background: var(--success-bg) !important; 
-            cursor: default; 
-            transform: translateY(0);
-        }
-        .option-card.correct::after {
-            content: '✓';
-            position: absolute; top: 0.5rem; right: 0.5rem;
-            width: 24px; height: 24px; border-radius: 50%;
-            background: var(--success); color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 14px;
-            animation: checkmark 0.3s ease;
-        }
-        .option-card.wrong     { 
-            border-color: var(--error) !important; 
-            background: var(--error-bg) !important; 
-            cursor: default; 
-            animation: shake 0.5s ease;
-        }
-        .option-card.wrong::after {
-            content: '✗';
-            position: absolute; top: 0.5rem; right: 0.5rem;
-            width: 24px; height: 24px; border-radius: 50%;
-            background: var(--error); color: white;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 14px;
-            animation: crossmark 0.3s ease;
-        }
-        .option-card.show-correct { 
-            border-color: var(--success) !important; 
-            background: var(--success-bg) !important; 
-            cursor: default; 
-        }
-        .option-card.locked    { cursor: default; }
-        
-        /* Status indicator animations */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.05); }
-        }
-        @keyframes checkmark {
-            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
-            50% { transform: scale(1.2) rotate(-10deg); opacity: 1; }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
-        }
-        @keyframes crossmark {
-            0% { transform: scale(0) rotate(180deg); opacity: 0; }
-            50% { transform: scale(1.2) rotate(10deg); opacity: 1; }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        
-        /* Enhanced progress dots */
-        .prog-dot { 
-            width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; 
-            background: var(--bg-tertiary); transition: all 0.3s ease; cursor: pointer;
-            border: 2px solid transparent; position: relative;
-        }
-        .prog-dot:hover:not(.current) { 
-            background: var(--accent); opacity: 0.8; 
-            transform: scale(1.2);
-        }
-        .prog-dot.answered-correct { 
-            background: var(--success); border-color: var(--success); 
-            box-shadow: 0 0 8px rgba(var(--success-rgb), 0.3);
-        }
-        .prog-dot.answered-wrong   { 
-            background: var(--error); border-color: var(--error);
-            box-shadow: 0 0 8px rgba(var(--error-rgb), 0.3);
-        }
-        .prog-dot.selected-but-not-submitted { 
-            background: var(--accent); border-color: var(--accent); 
-            opacity: 0.8;
-        }
-        .prog-dot.current          { 
-            background: var(--accent); border-color: var(--accent); 
-            transform: scale(1.3); 
-            box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.4);
-        }
-        
-        /* Status indicators */
-        .status-selected {
-            color: var(--accent) !important;
-            animation: fadeIn 0.3s ease;
-        }
-        .status-submitted {
-            color: var(--success) !important;
-            animation: fadeIn 0.3s ease;
-        }
-        .status-unsubmitted {
-            color: var(--text-muted) !important;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+/* Enhanced option cards with modern design */
+.option-card {
+    display: flex; align-items: flex-start; gap: 1rem;
+    padding: 1.25rem; border-radius: 1rem;
+    border: 2px solid var(--border);
+    background: var(--bg-secondary);
+    cursor: pointer; transition: all 0.3s ease;
+    user-select: none; position: relative;
+    overflow: hidden;
+}
+.option-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb, 255, 255, 255), 0.1), transparent);
+    transition: left 0.5s ease;
+}
+.option-card:hover:not(.locked) { 
+    border-color: var(--accent); 
+    background: var(--bg-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+.option-card:hover:not(.locked)::before {
+    left: 100%;
+}
+.option-card.selected { 
+    border-color: var(--accent); 
+    background: var(--accent-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(var(--accent-rgb, 255, 255, 255), 0.2);
+}
+.option-card.correct { 
+    border-color: var(--success) !important; 
+    background: var(--success-bg) !important; 
+    cursor: default; 
+    transform: translateY(0);
+}
+.option-card.correct::after {
+    content: '✓';
+    position: absolute; top: 0.75rem; right: 0.75rem;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--success); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 14px;
+    animation: checkmarkPop 0.4s ease;
+}
+.option-card.wrong { 
+    border-color: var(--error) !important; 
+    background: var(--error-bg) !important; 
+    cursor: default; 
+    animation: shakeHorizontal 0.6s ease;
+}
+.option-card.wrong::after {
+    content: '✗';
+    position: absolute; top: 0.75rem; right: 0.75rem;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--error); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 14px;
+    animation: crossmarkPop 0.4s ease;
+}
+.option-card.show-correct { 
+    border-color: var(--success) !important; 
+    background: var(--success-bg) !important; 
+    cursor: default; 
+}
+.option-card.locked { cursor: default; opacity: 0.8; }
 
-        .opt-letter {
-            width: 28px; height: 28px; border-radius: 50%;
-            background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center;
-            font-size: 0.75rem; font-weight: 700; flex-shrink: 0; color: var(--text-muted);
-            transition: background 0.15s, color 0.15s;
-        }
-        .option-card.correct   .opt-letter { background: var(--success); color: #fff; }
-        .option-card.wrong     .opt-letter { background: var(--error);   color: #fff; }
-        .option-card.show-correct .opt-letter { background: var(--success); color: #fff; }
-        .option-card.selected:not(.correct):not(.wrong) .opt-letter { background: var(--accent); color: var(--bg-primary); }
+/* Enhanced option letter */
+.opt-letter {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center;
+    font-size: 0.875rem; font-weight: 700; flex-shrink: 0; color: var(--text-muted);
+    transition: all 0.3s ease;
+    border: 2px solid var(--border);
+}
+.option-card.correct .opt-letter { 
+    background: var(--success); 
+    color: white; 
+    border-color: var(--success);
+    transform: scale(1.1);
+}
+.option-card.wrong .opt-letter { 
+    background: var(--error); 
+    color: white; 
+    border-color: var(--error);
+    transform: scale(1.1);
+}
+.option-card.show-correct .opt-letter { 
+    background: var(--success); 
+    color: white; 
+    border-color: var(--success);
+}
+.option-card.selected:not(.correct):not(.wrong) .opt-letter { 
+    background: var(--accent); 
+    color: var(--bg-primary); 
+    border-color: var(--accent);
+    transform: scale(1.05);
+}
 
-        .opt-text { font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); padding-top: 0.1rem; }
+/* Enhanced option text */
+.opt-text { 
+    font-size: 0.9375rem; 
+    line-height: 1.6; 
+    color: var(--text-primary); 
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+.option-card:hover:not(.locked) .opt-text {
+    color: var(--text-primary);
+}
 
-        /* Explanation box */
-        .expl-box { border-left: 3px solid var(--accent); border-radius: 0 0.75rem 0.75rem 0; background: var(--bg-tertiary); padding: 0.875rem 1rem; }
-        .ai-expl-box { border-left: 3px solid var(--success); border-radius: 0 0.75rem 0.75rem 0; background: var(--success-bg); padding: 0.875rem 1rem; }
+/* Modern progress indicators */
+.progress-dot { 
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; 
+    background: var(--bg-tertiary); transition: all 0.3s ease; cursor: pointer;
+    border: 2px solid transparent;
+    position: relative;
+}
+.progress-dot::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+.progress-dot:hover:not(.current) { 
+    background: var(--accent); opacity: 0.8; 
+    transform: scale(1.3);
+}
+.progress-dot.answered-correct { 
+    background: var(--success); 
+    border-color: var(--success);
+    box-shadow: 0 0 12px rgba(var(--success-rgb, 34, 197, 94), 0.4);
+}
+.progress-dot.answered-wrong { 
+    background: var(--error); 
+    border-color: var(--error);
+    box-shadow: 0 0 12px rgba(var(--error-rgb, 239, 68, 68), 0.4);
+}
+.progress-dot.selected-but-not-submitted { 
+    background: var(--accent); 
+    border-color: var(--accent); 
+    opacity: 0.9;
+    animation: pulse 2s infinite;
+}
+.progress-dot.current { 
+    background: var(--accent); 
+    border-color: var(--accent); 
+    transform: scale(1.4); 
+    box-shadow: 0 0 16px rgba(var(--accent-rgb, 255, 255, 255), 0.5);
+    animation: currentPulse 2s infinite;
+}
 
-        /* Diff badge */
-        .diff-badge { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.06em; padding: 0.2rem 0.55rem; border-radius: 999px; text-transform: uppercase; }
-        .diff-badge.easy   { background: var(--success-bg); color: var(--success); }
-        .diff-badge.medium { background: var(--warning-bg, rgba(234,179,8,0.12)); color: var(--warning, #eab308); }
-        .diff-badge.hard   { background: var(--error-bg); color: var(--error); }
+/* Enhanced animations */
+@keyframes checkmarkPop {
+    0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+    50% { transform: scale(1.3) rotate(-10deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes crossmarkPop {
+    0% { transform: scale(0) rotate(180deg); opacity: 0; }
+    50% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes shakeHorizontal {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); }
+}
+@keyframes currentPulse {
+    0%, 100% { opacity: 1; transform: scale(1.4); }
+    50% { opacity: 0.8; transform: scale(1.5); }
+}
 
-        /* Timer */
-        .timer-badge { font-size: 0.8rem; font-weight: 600; font-variant-numeric: tabular-nums; padding: 0.3rem 0.7rem; border-radius: 0.5rem; background: var(--bg-tertiary); color: var(--text-primary); }
-        .timer-badge.warning { background: var(--error-bg); color: var(--error); }
+/* Enhanced status indicators */
+.status-indicator {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+.status-indicator.selected {
+    background: var(--accent-bg);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+}
+.status-indicator.submitted {
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid var(--success);
+}
+.status-indicator.unsubmitted {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
 
-        /* Buttons */
-        .btn-primary { background: var(--accent); color: var(--bg-primary); padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
-        .btn-primary:hover { opacity: 0.85; }
-        .btn-secondary { background: var(--bg-tertiary); color: var(--text-secondary); padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-size: 0.875rem; font-weight: 500; cursor: pointer; border: 1px solid var(--border); transition: background 0.15s; }
-        .btn-secondary:hover { background: var(--bg-hover); }
+/* Enhanced buttons */
+.action-button {
+    padding: 0.875rem 1.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+}
+.action-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+.action-button:hover::before {
+    width: 300px;
+    height: 300px;
+}
+.action-button.primary {
+    background: var(--accent);
+    color: var(--bg-primary);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb, 255, 255, 255), 0.2);
+}
+.action-button.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(var(--accent-rgb, 255, 255, 255), 0.3);
+}
+.action-button.secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+.action-button.secondary:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+.action-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
 
-        @keyframes fadeSlide { from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);} }
-        .fade-slide { animation: fadeSlide 0.22s ease; }
+/* Enhanced explanation boxes */
+.explanation-box {
+    border-left: 4px solid var(--accent);
+    border-radius: 0 0.875rem 0.875rem 0;
+    background: var(--bg-tertiary);
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+.explanation-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--accent), transparent);
+}
+.ai-explanation-box {
+    border-left: 4px solid var(--success);
+    border-radius: 0 0.875rem 0.875rem 0;
+    background: var(--success-bg);
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+    position: relative;
+}
+.ai-explanation-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--success), transparent);
+}
 
-        @keyframes revealIn { from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);} }
-        .reveal-in { animation: revealIn 0.2s ease; }
+/* Enhanced timer */
+.timer-display {
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    padding: 0.5rem 1rem;
+    border-radius: 0.625rem;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+}
+.timer-display.warning {
+    background: var(--error-bg);
+    color: var(--error);
+    border-color: var(--error);
+    animation: timerWarning 1s infinite;
+}
+@keyframes timerWarning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
 
-        /* Spinner */
-        .spinner { width: 28px; height: 28px; border: 2.5px solid var(--bg-tertiary); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+/* Enhanced question card */
+.question-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+.question-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
 
-        /* Result overlay */
-        .result-indicator { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.875rem; font-weight: 600; }
-        .result-indicator.correct { color: var(--success); }
-        .result-indicator.wrong   { color: var(--error); }
+/* Enhanced difficulty badge */
+.difficulty-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+}
+.difficulty-badge.easy {
+    background: var(--success-bg);
+    color: var(--success);
+    border-color: var(--success);
+}
+.difficulty-badge.medium {
+    background: var(--warning-bg);
+    color: var(--warning);
+    border-color: var(--warning);
+}
+.difficulty-badge.hard {
+    background: var(--error-bg);
+    color: var(--error);
+    border-color: var(--error);
+}
     </style>
 </head>
 
@@ -265,47 +430,53 @@
     <div id="sessionScreen" class="hidden flex flex-col gap-5">
 
         <!-- Top bar: back + progress + timer -->
-        <div class="flex items-center gap-3">
-            <button onclick="confirmExit()" style="color:var(--text-muted);">
+        <div class="flex items-center gap-4">
+            <button onclick="confirmExit()" class="action-button secondary" title="Exit Test">
                 <span class="material-symbols-outlined">arrow_back</span>
             </button>
             <!-- Progress dots -->
-            <div class="flex items-center gap-1.5 flex-1 overflow-hidden" id="progressDots"></div>
+            <div class="flex items-center gap-2 flex-1 overflow-hidden" id="progressDots"></div>
             <!-- Q counter -->
-            <span class="text-xs font-medium flex-shrink-0" id="qCounter" style="color:var(--text-muted);"></span>
+            <div class="status-indicator unsubmitted" id="qCounter">
+                <span class="material-symbols-outlined text-sm">help_outline</span>
+                <span>Question 1 of 10</span>
+            </div>
             <!-- Timer (mock only) -->
-            <div id="timerBadge" class="timer-badge hidden">00:00</div>
+            <div id="timerBadge" class="timer-display hidden">00:00</div>
         </div>
 
         <!-- Question card -->
-        <div class="glass-panel rounded-xl p-6 flex flex-col gap-5 fade-slide" id="questionCard">
+        <div class="question-card fade-slide" id="questionCard">
             <!-- Meta row -->
-            <div class="flex items-center justify-between gap-2 flex-wrap">
-                <span class="diff-badge easy" id="diffBadge">Easy</span>
-                <span class="text-xs" id="topicLabel" style="color:var(--text-muted);"></span>
+            <div class="flex items-center justify-between gap-2 flex-wrap mb-6">
+                <span class="difficulty-badge easy" id="diffBadge">Easy</span>
+                <span class="text-sm" id="topicLabel" style="color:var(--text-muted);"></span>
             </div>
 
             <!-- Question text -->
-            <p class="text-base font-medium leading-relaxed" id="questionText" style="color:var(--text-primary);"></p>
+            <p class="text-lg font-medium leading-relaxed mb-8" id="questionText" style="color:var(--text-primary);"></p>
 
             <!-- Options -->
-            <div class="flex flex-col gap-2.5" id="optionsContainer"></div>
+            <div class="flex flex-col gap-3" id="optionsContainer"></div>
 
             <!-- Result indicator (shows after answer) -->
-            <div id="resultRow" class="hidden">
-                <div id="resultIndicator" class="result-indicator"></div>
+            <div id="resultRow" class="hidden mt-6">
+                <div id="resultIndicator" class="status-indicator"></div>
             </div>
 
             <!-- Explanation (shows after answer) -->
-            <div id="explanationSection" class="hidden flex flex-col gap-2.5 reveal-in">
-                <div class="expl-box" id="explBox">
-                    <p class="text-xs font-semibold mb-1" style="color:var(--accent);">Explanation</p>
+            <div id="explanationSection" class="hidden flex flex-col gap-4 mt-6">
+                <div class="explanation-box" id="explBox">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="material-symbols-outlined text-sm" style="color:var(--accent);">lightbulb</span>
+                        <p class="text-sm font-semibold" style="color:var(--accent);">Explanation</p>
+                    </div>
                     <p class="text-sm leading-relaxed" id="explText" style="color:var(--text-secondary);"></p>
                 </div>
-                <div class="ai-expl-box hidden" id="aiExplBox">
-                    <div class="flex items-center gap-1.5 mb-1">
+                <div class="ai-explanation-box hidden" id="aiExplBox">
+                    <div class="flex items-center gap-2 mb-2">
                         <span class="material-symbols-outlined text-sm" style="color:var(--success);">auto_awesome</span>
-                        <p class="text-xs font-semibold" style="color:var(--success);">AI Explanation</p>
+                        <p class="text-sm font-semibold" style="color:var(--success);">AI Explanation</p>
                     </div>
                     <p class="text-sm leading-relaxed" id="aiExplText" style="color:var(--text-secondary);"></p>
                 </div>
@@ -314,27 +485,31 @@
 
         <!-- Action row -->
         <div class="flex gap-3" id="actionRow">
-            <button id="btnPrevious" class="btn-secondary flex-1 hidden" onclick="previousQuestion()">
-                ← Previous
+            <button id="btnPrevious" class="action-button secondary flex-1 hidden" onclick="previousQuestion()">
+                <span class="material-symbols-outlined">arrow_back</span>
+                Previous
             </button>
-            <button id="btnSubmit" class="btn-primary flex-1 hidden" onclick="submitAnswer()">
-                Submit Answer ✓
+            <button id="btnSubmit" class="action-button primary flex-1 hidden" onclick="submitAnswer()">
+                <span class="material-symbols-outlined">check_circle</span>
+                Submit Answer
             </button>
-            <button id="btnNext" class="btn-primary flex-1 hidden" onclick="nextQuestion()">
-                Next Question →
+            <button id="btnNext" class="action-button primary flex-1 hidden" onclick="nextQuestion()">
+                Next Question
+                <span class="material-symbols-outlined">arrow_forward</span>
             </button>
-            <button id="btnFinish" class="btn-primary flex-1 hidden" onclick="finishSession()">
-                View Results →
+            <button id="btnFinish" class="action-button primary flex-1 hidden" onclick="finishSession()">
+                <span class="material-symbols-outlined">flag</span>
+                View Results
             </button>
         </div>
         
         <!-- Status indicator row -->
-        <div class="flex items-center justify-between text-xs mt-2" id="statusRow">
-            <div id="selectionStatus" class="flex items-center gap-1" style="color:var(--text-muted);">
+        <div class="flex items-center justify-between text-sm mt-4" id="statusRow">
+            <div id="selectionStatus" class="status-indicator unsubmitted">
                 <span class="material-symbols-outlined text-sm">radio_button_unchecked</span>
                 <span>No answer selected</span>
             </div>
-            <div id="submissionStatus" class="flex items-center gap-1" style="color:var(--text-muted);">
+            <div id="submissionStatus" class="status-indicator unsubmitted">
                 <span class="material-symbols-outlined text-sm">schedule</span>
                 <span>Not submitted</span>
             </div>
@@ -390,9 +565,9 @@ function renderQuestion() {
     const q = questions[currentIdx];
     if (!q) return;
 
-    // Diff badge
+    // Difficulty badge
     const badge = document.getElementById('diffBadge');
-    badge.className = 'diff-badge ' + (q.difficulty || 'medium');
+    badge.className = 'difficulty-badge ' + (q.difficulty || 'medium');
     badge.textContent = q.difficulty ? q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1) : 'Medium';
 
     // Topic label
@@ -401,7 +576,11 @@ function renderQuestion() {
         parts.length >= 5 ? parts.slice(4).join(' ').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : (q.subject || '');
 
     // Counter
-    document.getElementById('qCounter').textContent = `${currentIdx + 1} / ${questions.length}`;
+    const counterEl = document.getElementById('qCounter');
+    counterEl.innerHTML = `
+        <span class="material-symbols-outlined text-sm">help_outline</span>
+        <span>Question ${currentIdx + 1} of ${questions.length}</span>
+    `;
 
     // Question text
     document.getElementById('questionText').textContent = q.text;
@@ -465,7 +644,7 @@ function renderDots() {
     const max = Math.min(questions.length, 20);
     for (let i = 0; i < max; i++) {
         const dot = document.createElement('div');
-        dot.className = 'prog-dot';
+        dot.className = 'progress-dot';
         dot.title = `Question ${i + 1}`;
         
         const submitted = answered[i];
@@ -587,13 +766,13 @@ function updateStatusIndicators() {
             <span class="material-symbols-outlined text-sm">radio_button_checked</span>
             <span>Option ${optionLetter} selected</span>
         `;
-        selectionStatus.className = 'flex items-center gap-1 status-selected';
+        selectionStatus.className = 'status-indicator selected';
     } else {
         selectionStatus.innerHTML = `
             <span class="material-symbols-outlined text-sm">radio_button_unchecked</span>
             <span>No answer selected</span>
         `;
-        selectionStatus.className = 'flex items-center gap-1 status-unsubmitted';
+        selectionStatus.className = 'status-indicator unsubmitted';
     }
     
     // Update submission status
@@ -604,19 +783,19 @@ function updateStatusIndicators() {
             <span class="material-symbols-outlined text-sm">${statusIcon}</span>
             <span>${statusText}</span>
         `;
-        submissionStatus.className = `flex items-center gap-1 status-submitted`;
+        submissionStatus.className = 'status-indicator submitted';
     } else if (selectedOpt !== undefined) {
         submissionStatus.innerHTML = `
             <span class="material-symbols-outlined text-sm">pending</span>
             <span>Ready to submit</span>
         `;
-        submissionStatus.className = 'flex items-center gap-1 status-selected';
+        submissionStatus.className = 'status-indicator selected';
     } else {
         submissionStatus.innerHTML = `
             <span class="material-symbols-outlined text-sm">schedule</span>
             <span>Not submitted</span>
         `;
-        submissionStatus.className = 'flex items-center gap-1 status-unsubmitted';
+        submissionStatus.className = 'status-indicator unsubmitted';
     }
 }
 
@@ -638,7 +817,7 @@ async function submitAnswer() {
     // Disable submit button during submission
     const btnSubmit = document.getElementById('btnSubmit');
     btnSubmit.disabled = true;
-    btnSubmit.innerHTML = 'Submitting...';
+    btnSubmit.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span> Submitting...';
 
     // Call API to submit answer (submit_answer = true)
     const res = await apiFetch('/api/test/answer', 'POST', {
@@ -650,7 +829,7 @@ async function submitAnswer() {
     
     // Re-enable button
     btnSubmit.disabled = false;
-    btnSubmit.innerHTML = 'Submit Answer ✓';
+    btnSubmit.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Submit Answer';
     
     if (!res.success) { 
         showError(res.error || 'Failed to submit answer'); 
@@ -790,6 +969,7 @@ function showError(message) {
 function startTimer() {
     const badge = document.getElementById('timerBadge');
     badge.classList.remove('hidden');
+    badge.className = 'timer-display';
 
     function tick() {
         const remaining = Math.max(0, timerEnd - Date.now());

@@ -5,7 +5,162 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Files | {{ class_name }} | StudyOS</title>
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .teacher-classes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+        }
+        .upload-island {
+            grid-column: span 2;
+        }
+        @media (max-width: 768px) {
+            .teacher-classes-grid {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+            .upload-island {
+                grid-column: span 1;
+            }
+        }
+        .upload-rules {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .upload-rules ul {
+            margin: 0.5rem 0 0 1rem;
+            padding: 0;
+        }
+        .upload-rules li {
+            margin-bottom: 0.25rem;
+        }
+        .upload-progress {
+            display: none;
+            margin-top: 1rem;
+        }
+        .upload-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .upload-progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .upload-status {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .td-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .td-modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .td-modal {
+            width: min(480px, 100%);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+        }
+        .td-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border-bottom: 1px solid var(--border);
+        }
+        .td-modal-title {
+            font-size: 1rem;
+            font-weight: 800;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .td-modal-close {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 0.5rem;
+            padding: 0.4rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .td-modal-close:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent);
+        }
+        .td-modal-body {
+            padding: 1.25rem;
+            color: var(--text-primary);
+        }
+        .td-modal-footer {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            background: var(--bg-secondary);
+        }
+        .info-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+        .info-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+        }
+        .info-card h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .info-card p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            opacity: 0.6;
+        }
+    </style>
 </head>
 
 <body>
@@ -26,20 +181,119 @@
             {% endif %}
             {% endwith %}
 
-            <div class="study-island">
-                <div class="study-island-header">
-                    <h3>Upload New File</h3>
-                </div>
-                <form method="POST" enctype="multipart/form-data" style="margin-top:16px;">
-                    <div style="margin-bottom:16px;">
-                        <label for="file" style="display:block; margin-bottom:8px; font-weight:500;">Select File</label>
-                        <input type="file" id="file" name="file" required
-                               style="width:100%; padding:12px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; color:var(--text-primary);">
+            <div class="teacher-classes-grid">
+                <!-- Upload Form Island -->
+                <div class="island upload-island">
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined" style="color: var(--accent);">upload_file</span>
+                            Upload New File
+                        </h3>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="width:100%;">Upload File</button>
-                </form>
+                    <div class="upload-rules">
+                        <strong>Allowed files:</strong> PDF, DOC, DOCX, PPT, PPTX, TXT, JPG, PNG<br>
+                        <strong>Maximum size:</strong> 10 MB per file
+                        <ul>
+                            <li>Files will be visible to all students in this class</li>
+                            <li>You can upload multiple files by submitting this form again</li>
+                        </ul>
+                    </div>
+                    <form id="uploadForm" method="POST" enctype="multipart/form-data">
+                        <div style="margin-bottom: 1rem;">
+                            <label for="file" style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Select File</label>
+                            <input type="file" id="file" name="file" required
+                                   style="width:100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 0.5rem; color: var(--text-primary);">
+                        </div>
+                        <div class="upload-progress" id="uploadProgress">
+                            <div class="upload-progress-bar">
+                                <div class="upload-progress-fill" id="uploadProgressFill"></div>
+                            </div>
+                            <div class="upload-status" id="uploadStatus">Uploading...</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;" id="uploadBtn">Upload File</button>
+                    </form>
+                </div>
+
+                <!-- Quick Tips Island -->
+                <div class="island">
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined" style="color: var(--accent);">tips_and_updates</span>
+                            Quick Tips
+                        </h3>
+                    </div>
+                    <div class="info-card">
+                        <h4>
+                            <span class="material-symbols-outlined" style="color: var(--accent);">folder</span>
+                            Organize by Subject
+                        </h4>
+                        <p>Include the subject name in your filename (e.g., "Math_Chapter5_Notes.pdf") to help students find materials quickly.</p>
+                    </div>
+                    <div class="info-card">
+                        <h4>
+                            <span class="material-symbols-outlined" style="color: var(--accent);">schedule</span>
+                            Upload Early
+                        </h4>
+                        <p>Upload materials before class starts so students can review them ahead of time.</p>
+                    </div>
+                    <div class="info-card">
+                        <h4>
+                            <span class="material-symbols-outlined" style="color: var(--accent);">description</span>
+                            Add Descriptions
+                        </h4>
+                        <p>Consider adding a brief description or date to your filenames for better context.</p>
+                    </div>
+                </div>
+
+                <!-- Recent Uploads -->
+                <div class="island">
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined" style="color: var(--accent);">history</span>
+                            Recent Uploads
+                        </h3>
+                    </div>
+                    {% if recent_files %}
+                        {% for file in recent_files %}
+                        <div class="info-card" style="cursor: pointer;" onclick="window.open('{{ file.file_url }}', '_blank')">
+                            <h4 style="word-break: break-word;">
+                                <span class="material-symbols-outlined" style="color: var(--accent);">description</span>
+                                {% if file.file_name|length > 30 %}
+                                    {{ file.file_name[:27] }}...{{ file.file_name.split('.')[-1] }}
+                                {% else %}
+                                    {{ file.file_name }}
+                                {% endif %}
+                            </h4>
+                            <p style="font-size: 0.85rem; margin-bottom: 0.25rem;">
+                                Size: {{ "%.1f"|format(file.file_size / 1024) }} KB
+                            </p>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">
+                                {{ file.upload_date[:10] if file.upload_date else '' }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state" style="padding: 2rem;">
+                            <span class="material-symbols-outlined" style="font-size: 2.5rem; opacity: 0.3; display: block; margin-bottom: 0.75rem;">upload_file</span>
+                            <p style="font-size: 0.9rem; opacity: 0.7;">No uploads yet</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </main>
+    </div>
+
+    <div id="modalOverlay" class="td-modal-overlay" aria-hidden="true">
+        <div class="td-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="td-modal-header">
+                <h3 id="modalTitle" class="td-modal-title"></h3>
+                <button type="button" class="td-modal-close" data-modal-close>
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="modalBody" class="td-modal-body"></div>
+            <div id="modalFooter" class="td-modal-footer"></div>
+        </div>
     </div>
 
     <script>
@@ -48,6 +302,126 @@
             const savedTheme = localStorage.getItem("sclera-theme");
             if (savedTheme) root.setAttribute("data-theme", savedTheme);
         })();
+
+        // Modal helpers (reuse pattern from other teacher pages)
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const modalFooter = document.getElementById('modalFooter');
+
+        function openModal({ title, bodyHtml, footerHtml }) {
+            modalTitle.innerHTML = title || '';
+            modalBody.innerHTML = bodyHtml || '';
+            modalFooter.innerHTML = footerHtml || '';
+            modalOverlay.classList.add('open');
+            modalOverlay.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeModal() {
+            modalOverlay.classList.remove('open');
+            modalOverlay.setAttribute('aria-hidden', 'true');
+            modalTitle.textContent = '';
+            modalBody.innerHTML = '';
+            modalFooter.innerHTML = '';
+        }
+
+        // Close on overlay click or close button
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay || e.target.closest('[data-modal-close]')) {
+                closeModal();
+            }
+        });
+
+        // Escape key closes modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalOverlay.classList.contains('open')) {
+                closeModal();
+            }
+        });
+
+        // Upload form handling
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const uploadProgressFill = document.getElementById('uploadProgressFill');
+        const uploadStatus = document.getElementById('uploadStatus');
+
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('file');
+            if (!fileInput.files.length) {
+                showStatusModal({ title: 'No file selected', message: 'Please select a file to upload.' });
+                return;
+            }
+
+            // Show progress
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+            uploadProgress.style.display = 'block';
+            uploadProgressFill.style.width = '0%';
+            uploadStatus.textContent = 'Uploading...';
+
+            // Simulate progress (since we can't track real progress without XHR)
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 30;
+                if (progress > 90) progress = 90;
+                uploadProgressFill.style.width = progress + '%';
+                uploadStatus.textContent = `Uploading... ${Math.round(progress)}%`;
+            }, 200);
+
+            // Submit the form
+            const formData = new FormData(uploadForm);
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                clearInterval(progressInterval);
+                uploadProgressFill.style.width = '100%';
+                uploadStatus.textContent = 'Finalizing...';
+                return response.text();
+            }).then(html => {
+                // If the server returns a redirect or new page, assume success
+                showSuccessModal();
+            }).catch(err => {
+                console.error('Upload error:', err);
+                showStatusModal({ title: 'Upload failed', message: 'There was an error uploading your file. Please try again.' });
+            }).finally(() => {
+                clearInterval(progressInterval);
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload File';
+                setTimeout(() => {
+                    uploadProgress.style.display = 'none';
+                }, 1500);
+            });
+        });
+
+        function showSuccessModal() {
+            const title = `<span class="material-symbols-outlined" style="color: var(--accent);">check_circle</span> Upload Successful`;
+            const body = `
+                <p style="font-size: 0.95rem; line-height: 1.5;">Your file has been uploaded and is now visible to students in this class.</p>
+            `;
+            const footerHtml = `
+                <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
+                <button type="button" class="btn btn-primary" onclick="resetAndUploadAnother()">Upload Another</button>
+            `;
+            openModal({ title, bodyHtml: body, footerHtml });
+        }
+
+        function resetAndUploadAnother() {
+            closeModal();
+            document.getElementById('file').value = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Simple status modal helper
+        function showStatusModal({ title, message }) {
+            openModal({
+                title,
+                bodyHtml: `<p style="font-size: 0.95rem; line-height: 1.5;">${message || ''}</p>`,
+                footerHtml: `<button type="button" class="btn btn-primary" data-modal-close>OK</button>`
+            });
+        }
     </script>
 </body>
 

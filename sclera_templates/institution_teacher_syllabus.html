@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syllabus Management | StudyOS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        .syllabus-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            padding: 2rem;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .syllabus-grid {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+        }
+
+        .island {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .island:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .island-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .island-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stats-strip {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 480px) {
+            .stats-strip {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .stat-pill {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 0.75rem 1rem;
+            text-align: center;
+        }
+
+        .stat-pill-num {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .stat-pill-lbl {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .class-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .class-selector select {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            color: var(--text-primary);
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            appearance: auto;
+            min-width: 200px;
+        }
+
+        .class-selector select:focus {
+            outline: 2px solid var(--accent);
+            border-color: transparent;
+        }
+
+        .action-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2.5rem 2rem;
+            border-radius: 1.5rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .action-card .material-symbols-outlined {
+            font-size: 3rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .action-card:hover .material-symbols-outlined {
+            transform: scale(1.1);
+        }
+
+        .action-card h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem;
+        }
+
+        .action-card p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin: 0 0 1rem;
+            line-height: 1.5;
+        }
+
+        .action-card .card-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        {% include '_teacher_topnav.html' %}
+
+        <main class="main-content" style="margin-left:0">
+            <div class="content-header" style="padding: 2rem 2rem 1rem;">
+                <h1 style="font-size:2.2rem;font-weight:800;margin-bottom:.5rem">Syllabus Management</h1>
+                <p style="opacity:.7;font-size:1rem">Configure board syllabus exclusions and upload custom subjects</p>
+            </div>
+
+            <!-- Class Selector -->
+            <div style="padding: 0 2rem;">
+                {% if classes %}
+                <div class="class-selector">
+                    <label for="classSelect" style="font-weight:600; color:var(--text-muted); font-size:0.9rem;">Select Class:</label>
+                    <select id="classSelect" onchange="changeClass(this.value)">
+                        {% for cls in classes %}
+                        <option value="{{ cls.id }}" {% if cls.id == class_id %}selected{% endif %}>
+                            {{ cls.get('name', cls.id) }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if not selected_class %}
+            <div style="padding: 2rem; text-align: center;">
+                <div class="island" style="padding: 3rem;">
+                    <span class="material-symbols-outlined" style="font-size:4rem; opacity:0.3; display:block; margin-bottom:1rem;">class</span>
+                    <h3>No classes available</h3>
+                    <p style="color:var(--text-muted);">Create a class first from the <a href="{{ url_for('institution_teacher_classes') }}">Classes</a> page.</p>
+                </div>
+            </div>
+            {% else %}
+            <!-- Overview Island -->
+            <div style="padding: 0 2rem;">
+                <div class="island">
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined" style="color:var(--accent);">school</span>
+                            {{ selected_class.get('name', 'Class') }}
+                        </h3>
+                        <span class="card-meta" style="font-size:0.85rem; color:var(--text-muted);">
+                            {% if selected_class.get('original_purpose') == 'exam' %}
+                                {{ selected_class.get('purpose', 'Exam') }} Prep
+                            {% else %}
+                                {{ selected_class.get('board', 'CBSE') }} · Grade {{ selected_class.get('grade', '10') }}
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="stats-strip">
+                        <div class="stat-pill">
+                            <div class="stat-pill-num">{{ stats.total_subjects }}</div>
+                            <div class="stat-pill-lbl">Board Subjects</div>
+                        </div>
+                        <div class="stat-pill">
+                            <div class="stat-pill-num">{{ stats.total_chapters }}</div>
+                            <div class="stat-pill-lbl">Total Chapters</div>
+                        </div>
+                        <div class="stat-pill">
+                            <div class="stat-pill-num">{{ stats.total_custom }}</div>
+                            <div class="stat-pill-lbl">Custom Syllabi</div>
+                        </div>
+                    </div>
+
+                    <!-- Action Cards -->
+                    <div class="syllabus-grid">
+                        <!-- Board Syllabus Card -->
+                        <a href="{{ url_for('manage_class_syllabus', class_id=selected_class.id) }}" class="action-card">
+                            <span class="material-symbols-outlined">menu_book</span>
+                            <h3>Board Syllabus</h3>
+                            <p>View, hide or show chapters from the standard curriculum for this class</p>
+                            <div class="card-meta">
+                                <span class="material-symbols-outlined" style="font-size:1rem;">edit</span>
+                                Manage exclusions
+                            </div>
+                        </a>
+
+                        <!-- Custom Syllabus Card -->
+                        <a href="{{ url_for('custom_syllabus_upload', class_id=selected_class.id) }}" class="action-card">
+                            <span class="material-symbols-outlined">add_circle</span>
+                            <h3>Custom Syllabus</h3>
+                            <p>Create additional subject outlines using AI extraction or manual entry</p>
+                            <div class="card-meta">
+                                <span class="material-symbols-outlined" style="font-size:1rem;">auto_awesome</span>
+                                AI‑powered extraction
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+
+    <script>
+        // Theme handling
+        (function() {
+            const root = document.documentElement;
+            const saved = localStorage.getItem('sclera-theme');
+            if (saved) root.setAttribute('data-theme', saved);
+        })();
+
+        // Navigate to the same page with a new class_id
+        function changeClass(classId) {
+            const url = new URL(window.location);
+            url.searchParams.set('class_id', classId);
+            window.location.href = url.toString();
+        }
+    </script>
+</body>
+</html>

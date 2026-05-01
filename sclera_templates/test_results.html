@@ -24,35 +24,409 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Score ring */
-        .score-ring-wrap { position: relative; width: 120px; height: 120px; flex-shrink: 0; }
-        .score-ring-wrap svg { transform: rotate(-90deg); }
-        .score-ring-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+/* Enhanced score ring */
+.score-ring-container {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0;
+}
+.score-ring-container svg {
+    transform: rotate(-90deg);
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+}
+.score-ring-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.score-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+.score-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
 
-        /* Q review cards */
-        .review-card { border-radius: 0.875rem; border: 1px solid var(--border); background: var(--bg-secondary); overflow: hidden; }
-        .review-card.correct { border-color: var(--success); }
-        .review-card.wrong   { border-color: var(--error); }
+/* Enhanced result cards */
+.result-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+.result-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+.result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    border-color: var(--accent);
+}
+.result-card:hover::before {
+    transform: scaleX(1);
+}
 
-        .opt-row { display: flex; align-items: flex-start; gap: 0.625rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; }
-        .opt-row.is-correct  { background: var(--success-bg); }
-        .opt-row.is-wrong    { background: var(--error-bg); }
-        .opt-letter-sm { width: 22px; height: 22px; border-radius: 50%; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; flex-shrink: 0; color: var(--text-muted); }
-        .opt-row.is-correct .opt-letter-sm { background: var(--success); color: #fff; }
-        .opt-row.is-wrong   .opt-letter-sm { background: var(--error);   color: #fff; }
+/* Enhanced stat cards */
+.stat-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+.stat-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--accent);
+}
+.stat-card:hover::before {
+    transform: scaleX(1);
+}
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+.stat-number.correct {
+    color: var(--success);
+}
+.stat-number.wrong {
+    color: var(--error);
+}
+.stat-number.neutral {
+    color: var(--text-primary);
+}
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
 
-        .diff-badge { font-size: 0.6rem; font-weight: 600; padding: 0.18rem 0.45rem; border-radius: 999px; text-transform: uppercase; }
-        .diff-badge.easy   { background: var(--success-bg); color: var(--success); }
-        .diff-badge.medium { background: var(--warning-bg, rgba(234,179,8,0.1)); color: var(--warning, #eab308); }
-        .diff-badge.hard   { background: var(--error-bg); color: var(--error); }
+/* Enhanced question review cards */
+.question-review-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+}
+.question-review-card.correct {
+    border-color: var(--success);
+    box-shadow: 0 4px 12px rgba(var(--success-rgb, 34, 197, 94), 0.2);
+}
+.question-review-card.wrong {
+    border-color: var(--error);
+    box-shadow: 0 4px 12px rgba(var(--error-rgb, 239, 68, 68), 0.2);
+}
+.question-review-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+.question-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border-subtle, var(--border));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-tertiary);
+}
+.question-header.correct {
+    background: var(--success-bg);
+    border-bottom-color: var(--success);
+}
+.question-header.wrong {
+    background: var(--error-bg);
+    border-bottom-color: var(--error);
+}
+.question-number {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.question-content {
+    padding: 1.5rem;
+}
+.question-text {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+}
+.option-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    padding: 0.875rem;
+    border-radius: 0.625rem;
+    transition: all 0.2s ease;
+}
+.option-row.is-correct {
+    background: var(--success-bg);
+    border: 1px solid var(--success);
+}
+.option-row.is-wrong {
+    background: var(--error-bg);
+    border: 1px solid var(--error);
+}
+.option-letter {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    border: 2px solid var(--border);
+}
+.option-row.is-correct .option-letter {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+.option-row.is-wrong .option-letter {
+    background: var(--error);
+    color: white;
+    border-color: var(--error);
+}
+.option-text {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    flex: 1;
+}
+.option-icon {
+    font-size: 1rem;
+}
+.option-icon.correct {
+    color: var(--success);
+}
+.option-icon.wrong {
+    color: var(--error);
+}
 
-        .expl-box { border-left: 3px solid var(--border); border-radius: 0 0.5rem 0.5rem 0; background: var(--bg-tertiary); padding: 0.625rem 0.875rem; }
+/* Enhanced explanation box */
+.explanation-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle, var(--border));
+}
+.explanation-box {
+    background: var(--bg-tertiary);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 0.75rem 0.75rem 0;
+    padding: 1rem 1.25rem;
+    position: relative;
+    overflow: hidden;
+}
+.explanation-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--accent), transparent);
+}
+.explanation-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.explanation-text {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
 
-        .stat-box { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 0.875rem; padding: 0.875rem; text-align: center; }
+/* Enhanced difficulty badge */
+.difficulty-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+}
+.difficulty-badge.easy {
+    background: var(--success-bg);
+    color: var(--success);
+    border-color: var(--success);
+}
+.difficulty-badge.medium {
+    background: var(--warning-bg);
+    color: var(--warning);
+    border-color: var(--warning);
+}
+.difficulty-badge.hard {
+    background: var(--error-bg);
+    color: var(--error);
+    border-color: var(--error);
+}
 
-        @keyframes fadeUp { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
-        .fade-up { animation: fadeUp 0.25s ease; }
-        .fade-up-2 { animation: fadeUp 0.35s ease; }
+/* Enhanced action buttons */
+.action-button {
+    padding: 0.875rem 1.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+}
+.action-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+.action-button:hover::before {
+    width: 300px;
+    height: 300px;
+}
+.action-button.primary {
+    background: var(--accent);
+    color: var(--bg-primary);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb, 255, 255, 255), 0.2);
+}
+.action-button.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(var(--accent-rgb, 255, 255, 255), 0.3);
+}
+.action-button.secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+.action-button.secondary:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+/* Enhanced navigation dots */
+.question-nav-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+    flex-wrap: wrap;
+}
+.question-nav-dot {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.question-nav-dot:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.question-nav-dot.correct {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+.question-nav-dot.wrong {
+    background: var(--error);
+    color: white;
+    border-color: var(--error);
+}
+
+/* Enhanced animations */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.slide-up {
+    animation: slideInUp 0.4s ease;
+}
+.slide-up-2 {
+    animation: slideInUp 0.5s ease;
+}
+.slide-up-3 {
+    animation: slideInUp 0.6s ease;
+}
     </style>
 </head>
 
@@ -62,31 +436,31 @@
 <div class="max-w-2xl mx-auto pt-20 pb-16 px-4">
 
     <!-- ── Score hero ─────────────────────────────────────────────────────── -->
-    <div class="glass-panel rounded-xl p-6 mb-5 fade-up">
-        <div class="flex items-center gap-6">
-            <!-- Ring -->
-            <div class="score-ring-wrap">
-                <svg width="120" height="120" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="var(--bg-tertiary)" stroke-width="8"/>
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="var(--accent)" stroke-width="8"
+    <div class="result-card slide-up mb-6">
+        <div class="flex items-center gap-8">
+            <!-- Score ring -->
+            <div class="score-ring-container">
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                    <circle cx="70" cy="70" r="58" fill="none" stroke="var(--bg-tertiary)" stroke-width="8"/>
+                    <circle cx="70" cy="70" r="58" fill="none" stroke="var(--accent)" stroke-width="8"
                         id="scoreArc"
-                        stroke-dasharray="0 314.16"
+                        stroke-dasharray="0 364.42"
                         stroke-linecap="round"/>
                 </svg>
-                <div class="score-ring-label">
-                    <span class="text-2xl font-bold" style="color:var(--text-primary);">{{ attempt.score|int }}%</span>
-                    <span class="text-xs" style="color:var(--text-muted);">Score</span>
+                <div class="score-ring-content">
+                    <span class="score-value">{{ attempt.score|int }}%</span>
+                    <span class="score-label">Score</span>
                 </div>
             </div>
             <!-- Text -->
             <div class="flex-1">
-                <h1 class="text-lg font-semibold mb-1" style="color:var(--text-primary);">
+                <h1 class="text-2xl font-bold mb-2" style="color:var(--text-primary);">
                     {% if attempt.score >= 80 %}Excellent! 🎉
                     {% elif attempt.score >= 60 %}Good effort! 📚
                     {% else %}Keep practising 💪
                     {% endif %}
                 </h1>
-                <p class="text-sm mb-4" style="color:var(--text-secondary);">
+                <p class="text-base mb-4" style="color:var(--text-secondary);">
                     {% if attempt.submitted_count is defined %}
                         {{ attempt.correct_count }} correct · {{ attempt.submitted_count - attempt.correct_count }} wrong · {{ attempt.submitted_count }} submitted
                         {% if attempt.attempted_count != attempt.submitted_count %}
@@ -98,9 +472,9 @@
                 </p>
                 <!-- Submission status indicator -->
                 {% if attempt.submitted_count is defined and attempt.attempted_count != attempt.submitted_count %}
-                <div class="flex items-center gap-2 mb-2 p-2 rounded-lg" style="background: var(--warning-bg, rgba(234,179,8,0.1));">
-                    <span class="material-symbols-outlined text-sm" style="color: var(--warning, #eab308);">warning</span>
-                    <span class="text-xs" style="color: var(--warning, #eab308);">
+                <div class="flex items-center gap-2 mb-3 p-3 rounded-lg" style="background: var(--warning-bg); color: var(--warning);">
+                    <span class="material-symbols-outlined text-sm">warning</span>
+                    <span class="text-sm font-medium">
                         {{ attempt.attempted_count - attempt.submitted_count }} question(s) selected but not submitted
                     </span>
                 </div>
@@ -113,37 +487,37 @@
 
     <!-- ── Stat row ───────────────────────────────────────────────────────── -->
     {% if attempt.submitted_count is defined %}
-    <div class="grid grid-cols-4 gap-3 mb-5 fade-up-2">
-        <div class="stat-box">
-            <p class="text-xl font-bold" style="color:var(--success);">{{ attempt.correct_count }}</p>
-            <p class="text-xs mt-0.5" style="color:var(--text-muted);">Correct</p>
+    <div class="grid grid-cols-4 gap-3 mb-6 slide-up-2">
+        <div class="stat-card">
+            <p class="stat-number correct">{{ attempt.correct_count }}</p>
+            <p class="stat-label">Correct</p>
         </div>
-        <div class="stat-box">
-            <p class="text-xl font-bold" style="color:var(--error);">{{ attempt.submitted_count - attempt.correct_count }}</p>
-            <p class="text-xs mt-0.5" style="color:var(--text-muted);">Wrong</p>
+        <div class="stat-card">
+            <p class="stat-number wrong">{{ attempt.submitted_count - attempt.correct_count }}</p>
+            <p class="stat-label">Wrong</p>
         </div>
-        <div class="stat-box">
-            <p class="text-xl font-bold" style="color:var(--text-primary);">{{ attempt.submitted_count }}</p>
-            <p class="text-xs mt-0.5" style="color:var(--text-muted);">Submitted</p>
+        <div class="stat-card">
+            <p class="stat-number neutral">{{ attempt.submitted_count }}</p>
+            <p class="stat-label">Submitted</p>
         </div>
-        <div class="stat-box">
-            <p class="text-xl font-bold" style="color:var(--text-muted);">{{ attempt.attempted_count }}</p>
-            <p class="text-xs mt-0.5" style="color:var(--text-muted);">Attempted</p>
+        <div class="stat-card">
+            <p class="stat-number neutral">{{ attempt.attempted_count }}</p>
+            <p class="stat-label">Attempted</p>
         </div>
     </div>
     {% else %}
-    <div class="grid grid-cols-3 gap-3 mb-5 fade-up-2">
-        <div class="stat-box">
-            <p class="text-xl font-bold" style="color:var(--success);">{{ attempt.correct_count }}</p>
-            <p class="text-xs mt-0.5" style="color:var(--text-muted);">Correct</p>
+    <div class="grid grid-cols-3 gap-3 mb-6 slide-up-2">
+        <div class="stat-card">
+            <p class="stat-number correct">{{ attempt.correct_count }}</p>
+            <p class="stat-label">Correct</p>
         </div>
-        <div class="stat-box">
-            <p class="text-xl font-bold" style="color:var(--error);">{{ attempt.total_count - attempt.correct_count }}</p>
-            <p class="text-xs mt-0.5" style="color:var(--text-muted);">Incorrect</p>
+        <div class="stat-card">
+            <p class="stat-number wrong">{{ attempt.total_count - attempt.correct_count }}</p>
+            <p class="stat-label">Incorrect</p>
         </div>
-        <div class="stat-box">
-            <p class="text-xl font-bold" style="color:var(--text-primary);">{{ attempt.total_count }}</p>
-            <p class="text-xs mt-0.5" style="color:var(--text-muted);">Total</p>
+        <div class="stat-card">
+            <p class="stat-number neutral">{{ attempt.total_count }}</p>
+            <p class="stat-label">Total</p>
         </div>
     </div>
     {% endif %}
@@ -179,37 +553,36 @@
     <div class="flex gap-3 mb-6 flex-wrap">
         {% if attempt.topic_id %}
         <a href="{{ url_for('test_dashboard') }}" onclick="retryTopic(event)"
-            class="flex-1 min-w-[130px] py-2.5 px-4 text-center rounded-xl text-sm font-medium border transition-colors"
-            style="border-color:var(--border);color:var(--text-secondary);"
-            id="retryBtn">
-            <span class="material-symbols-outlined text-sm align-middle mr-1">replay</span>Retry Topic
+            class="action-button secondary flex-1 min-w-[130px]" id="retryBtn">
+            <span class="material-symbols-outlined text-sm">replay</span>
+            Retry Topic
         </a>
         {% endif %}
         <button onclick="reviewAnswers()" 
-            class="flex-1 min-w-[130px] py-2.5 px-4 text-center rounded-xl text-sm font-medium border transition-colors"
-            style="border-color:var(--border);color:var(--text-secondary);">
-            <span class="material-symbols-outlined text-sm align-middle mr-1">visibility</span>Review Answers
+            class="action-button secondary flex-1 min-w-[130px]">
+            <span class="material-symbols-outlined text-sm">visibility</span>
+            Review Answers
         </button>
         <a href="{{ url_for('test_dashboard') }}"
-            class="flex-1 min-w-[130px] py-2.5 px-4 text-center rounded-xl text-sm font-semibold"
-            style="background:var(--accent);color:var(--bg-primary);">
-            <span class="material-symbols-outlined text-sm align-middle mr-1">home</span>All Tests
+            class="action-button primary flex-1 min-w-[130px]">
+            <span class="material-symbols-outlined text-sm">home</span>
+            All Tests
         </a>
     </div>
 
     <!-- ── Question review ────────────────────────────────────────────────── -->
-    <h2 class="text-sm font-semibold mb-3" style="color:var(--text-muted);">QUESTION REVIEW</h2>
+    <h2 class="text-lg font-semibold mb-4" style="color:var(--text-muted);">QUESTION REVIEW</h2>
     <div class="flex flex-col gap-4">
         {% for r in attempt.results %}
-        <div class="review-card {% if r.is_correct %}correct{% else %}wrong{% endif %} fade-up">
+        <div class="question-review-card {% if r.is_correct %}correct{% else %}wrong{% endif %} slide-up">
             <!-- Card header -->
-            <div class="flex items-center justify-between px-4 py-3 border-b"
-                 style="border-color:var(--border-subtle, var(--border));">
+            <div class="question-header {% if r.is_correct %}correct{% else %}wrong{% endif %}">
                 <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-base {% if r.is_correct %}" style="color:var(--success)">check_circle{% else %}" style="color:var(--error)">cancel{% endif %}">
+                    <span class="material-symbols-outlined text-base" {% if r.is_correct %}style="color:var(--success)"{% else %}style="color:var(--error)"{% endif %}>
+                        {% if r.is_correct %}check_circle{% else %}cancel{% endif %}
                     </span>
-                    <span class="text-xs font-medium" style="color:var(--text-secondary);">Q{{ loop.index }}</span>
-                    <span class="diff-badge {{ r.difficulty }}">{{ r.difficulty }}</span>
+                    <span class="question-number">Question {{ loop.index }}</span>
+                    <span class="difficulty-badge {{ r.difficulty }}">{{ r.difficulty }}</span>
                     {% if r.submitted_at is defined %}
                     <span class="text-xs px-2 py-1 rounded-full" style="background: var(--success-bg); color: var(--success);">
                         Submitted
@@ -217,27 +590,27 @@
                     {% endif %}
                 </div>
                 {% if r.topic_id %}
-                <span class="text-xs" style="color:var(--text-muted);">
+                <span class="text-sm" style="color:var(--text-muted);">
                     {{ r.topic_id.split('_')[4:] | join(' ') | replace('-',' ') | title if r.topic_id.split('_')|length > 4 else '' }}
                 </span>
                 {% endif %}
             </div>
 
             <!-- Body -->
-            <div class="p-4 flex flex-col gap-3">
-                <p class="text-sm font-medium leading-relaxed" style="color:var(--text-primary);">{{ r.text }}</p>
+            <div class="question-content">
+                <p class="question-text">{{ r.text }}</p>
 
                 <!-- Options -->
-                <div class="flex flex-col gap-1.5">
+                <div class="flex flex-col gap-2">
                     {% for opt in r.options %}
                     {% set i = loop.index0 %}
-                    <div class="opt-row {% if i == r.correct_option_index %}is-correct{% elif i == r.selected_option and not r.is_correct %}is-wrong{% endif %}">
-                        <span class="opt-letter-sm">{{ ['A','B','C','D'][i] }}</span>
-                        <span class="text-xs leading-relaxed flex-1" style="color:var(--text-secondary);">{{ opt }}</span>
+                    <div class="option-row {% if i == r.correct_option_index %}is-correct{% elif i == r.selected_option and not r.is_correct %}is-wrong{% endif %}">
+                        <span class="option-letter">{{ ['A','B','C','D'][i] }}</span>
+                        <span class="option-text">{{ opt }}</span>
                         {% if i == r.correct_option_index %}
-                        <span class="material-symbols-outlined text-xs" style="color:var(--success);">check</span>
+                        <span class="material-symbols-outlined option-icon correct">check</span>
                         {% elif i == r.selected_option and not r.is_correct %}
-                        <span class="material-symbols-outlined text-xs" style="color:var(--error);">close</span>
+                        <span class="material-symbols-outlined option-icon wrong">close</span>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -245,17 +618,20 @@
 
                 <!-- Explanation -->
                 {% if r.explanation %}
-                <div class="expl-box">
-                    <p class="text-xs font-semibold mb-0.5" style="color:var(--accent);">Explanation</p>
-                    <p class="text-xs leading-relaxed" style="color:var(--text-secondary);">{{ r.explanation }}</p>
+                <div class="explanation-section">
+                    <div class="explanation-box">
+                        <div class="explanation-title">
+                            <span class="material-symbols-outlined text-sm">lightbulb</span>
+                            Explanation
+                        </div>
+                        <p class="explanation-text">{{ r.explanation }}</p>
+                    </div>
                 </div>
                 {% endif %}
             </div>
         </div>
         {% endfor %}
     </div>
-
-</div>
 
 <script>
 const ATTEMPT  = {{ attempt | tojson }};
@@ -266,7 +642,7 @@ const TOPIC_ID = ATTEMPT.topic_id || '';
 // Animate score ring
 window.addEventListener('DOMContentLoaded', () => {
     const arc = document.getElementById('scoreArc');
-    const circ = 2 * Math.PI * 50;  // r=50
+    const circ = 2 * Math.PI * 58;  // r=58
     const dash = (SCORE / 100) * circ;
     setTimeout(() => {
         arc.style.transition = 'stroke-dasharray 0.9s ease';
@@ -284,7 +660,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!v.t) return;
         const pct = Math.round(v.c / v.t * 100);
         const chip = document.createElement('span');
-        chip.className = 'diff-badge ' + d;
+        chip.className = 'difficulty-badge ' + d;
         chip.textContent = `${d.charAt(0).toUpperCase()+d.slice(1)}: ${v.c}/${v.t} (${pct}%)`;
         container.appendChild(chip);
     });

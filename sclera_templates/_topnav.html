@@ -44,6 +44,11 @@
             <span class="material-symbols-outlined">query_stats</span>
             <span class="notch-label">Statistics</span>
         </a>
+        <a href="{{ url_for('test_dashboard') }}"
+            class="notch-item {% if p.startswith('/test') %}active{% endif %}">
+            <span class="material-symbols-outlined">assignment</span>
+            <span class="notch-label">Tests</span>
+        </a>
         {% if in_institution and has_class %}
         <a href="{{ url_for('class_management') }}"
             class="notch-item {% if p.startswith('/student/class/management') %}active{% endif %}">

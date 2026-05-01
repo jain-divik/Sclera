@@ -3,58 +3,165 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <title>Teacher Settings | StudyOS</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        .teacher-settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+        }
+        @media (max-width: 768px) {
+            .teacher-settings-grid {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+        }
+        .info-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+        .info-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+        }
+        .info-card h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .info-card p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+        .class-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .class-row:last-child {
+            border-bottom: none;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .checkbox-group label {
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .form-hint {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+    </style>
 </head>
 
 <body>
     <div class="dashboard-layout">
-    {% include '_teacher_topnav.html' %}
+        {% include '_teacher_topnav.html' %}
 
         <main class="main-content">
-            <h1>Teacher Settings</h1>
-            <p class="text-muted">Manage your teaching preferences and notifications</p>
+            <div class="content-header">
+                <h1>Teacher Settings</h1>
+                <p>Manage your teaching preferences and notifications</p>
+            </div>
 
-            <div class="inst-grid">
+            <div class="teacher-settings-grid">
+                <!-- Profile Information -->
                 <div class="island">
-                    <h3>Profile Information</h3>
-                    <p><strong>Name:</strong> {{ profile.get('name', 'N/A') }}</p>
-                    <p><strong>Email:</strong> {{ profile.get('email', 'N/A') }}</p>
-                    <p><strong>Status:</strong> {{ profile.get('status', 'active').title() }}</p>
-                    <p><strong>Institution:</strong> {{ institution.get('name', 'N/A') }}</p>
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined" style="color: var(--accent);">person</span>
+                            Profile Information
+                        </h3>
+                    </div>
+                    <div class="info-card">
+                        <h4>
+                            <span class="material-symbols-outlined" style="color: var(--accent);">badge</span>
+                            Details
+                        </h4>
+                        <p><strong>Name:</strong> {{ profile.get('name', 'N/A') }}</p>
+                        <p><strong>Email:</strong> {{ profile.get('email', 'N/A') }}</p>
+                        <p><strong>Status:</strong> {{ profile.get('status', 'active').title() }}</p>
+                        <p><strong>Institution:</strong> {{ institution.get('name', 'N/A') }}</p>
+                    </div>
                 </div>
 
+                <!-- Class Management -->
                 <div class="island">
-                    <h3>Class Management</h3>
-                    <p>Total Classes: {{ classes|length }}</p>
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined" style="color: var(--accent);">class</span>
+                            Class Management
+                        </h3>
+                    </div>
+                    <div class="info-card">
+                        <h4>
+                            <span class="material-symbols-outlined" style="color: var(--accent);">groups</span>
+                            Overview
+                        </h4>
+                        <p><strong>Total Classes:</strong> {{ classes|length }}</p>
+                    </div>
                     {% for cls in classes %}
                     <div class="class-row">
                         <span>{{ cls.get('name', cls.id) }}</span>
-                        <span class="text-muted">{{ cls.get('students', [])|length }} students</span>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">{{ cls.get('student_uids', [])|length }} students</span>
                     </div>
                     {% endfor %}
-                    <br>
-                    <a href="{{ url_for('institution_teacher_create_class') }}" class="btn btn-primary">Create New Class</a>
+                    <div style="margin-top: 1.5rem;">
+                        <a href="{{ url_for('institution_teacher_create_class') }}" class="btn btn-primary">
+                            <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.5rem;">add</span>
+                            Create New Class
+                        </a>
+                    </div>
                 </div>
 
-                <!-- NOTIFICATIONS ISLAND -->
+                <!-- Notifications -->
                 <div class="island">
-                    <h3>Notifications</h3>
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined" style="color: var(--accent);">notifications</span>
+                            Notifications
+                        </h3>
+                    </div>
                     <form method="POST" action="{{ url_for('settings') }}">
                         <input type="hidden" name="action" value="general">
 
-                        <div class="form-group checkbox-group" style="display:flex;align-items:center;gap:12px;">
+                        <div class="checkbox-group">
                             <input type="checkbox" name="email_notifications" id="email_notifications"
-                                {% if settings.get('email_notifications') %}checked{% endif %}
-                                style="width:18px;height:18px;cursor:pointer;">
-                            <label for="email_notifications" style="cursor:pointer;">
-                                Email Notifications
-                            </label>
+                                {% if settings.get('email_notifications') %}checked{% endif %}>
+                            <label for="email_notifications">Email Notifications</label>
                         </div>
-                        <p class="form-hint" style="color:var(--text-muted);font-size:13px;margin-top:8px;">
+                        <p class="form-hint">
                             Receive email updates about student progress and assignments
                         </p>
-                        <button type="submit" class="btn btn-primary" style="margin-top:16px;">Save Notifications</button>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save Preferences</button>
                     </form>
                 </div>
             </div>

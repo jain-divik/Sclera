@@ -9,11 +9,124 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
-        .dashboard-grid {
+        .teacher-dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: minmax(0, 1fr);
             gap: 1.5rem;
             padding: 2rem;
+            align-items: start;
+            width: 100%;
+        }
+
+        .dashboard-grid-top {
+            display: grid;
+            grid-template-columns: 1fr 1.35fr 1fr;
+            grid-template-areas:
+                "overview heatmap classes"
+                "broadcast heatmap actions";
+            gap: 1.5rem;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .dashboard-grid-bottom {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .area-overview { grid-area: overview; }
+        .area-heatmap { grid-area: heatmap; }
+        .area-classes { grid-area: classes; }
+        .area-broadcast { grid-area: broadcast; }
+        .area-actions { grid-area: actions; }
+
+        .area-heatmap {
+            min-height: 520px;
+        }
+
+        .area-classes {
+            max-height: 520px;
+            overflow: hidden;
+        }
+
+        .area-classes .recent-classes {
+            max-height: none;
+            overflow: visible;
+        }
+
+        #clustersIsland {
+            max-height: 520px;
+            overflow: hidden;
+        }
+
+        #clustersIsland #automatedPatternsContainer {
+            max-height: 440px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        #atRiskIsland {
+            max-height: 520px;
+            overflow: hidden;
+        }
+
+        #atRiskIsland .risk-list {
+            max-height: 440px !important;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid-top {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "overview"
+                    "actions"
+                    "heatmap"
+                    "classes"
+                    "broadcast";
+            }
+
+            .dashboard-grid-bottom {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .priority-overview {
+            grid-row: auto;
+        }
+        
+        .priority-alerts {
+            border-left: 4px solid #ef4444;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(239, 68, 68, 0.05) 100%);
+        }
+        
+        .recent-classes {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .loading {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
         
         .island {
@@ -51,6 +164,117 @@
         .island-clickable {
             cursor: pointer;
         }
+
+        .td-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            z-index: 10000;
+        }
+
+        .td-modal-overlay.open {
+            display: flex !important;
+        }
+
+        .td-modal {
+            width: min(720px, 100%);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+            overflow: hidden;
+        }
+
+        .td-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+        }
+
+        .td-modal-title {
+            font-size: 1rem;
+            font-weight: 800;
+            margin: 0;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .td-modal-close {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .td-modal-close:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent);
+        }
+
+        .td-modal-body {
+            padding: 1.25rem;
+            color: var(--text-primary);
+        }
+
+        .td-modal-footer {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            background: var(--bg-secondary);
+        }
+
+        .td-modal-textarea {
+            width: 100%;
+            min-height: 120px;
+            resize: vertical;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .td-modal-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .td-modal-kv {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .td-modal-kv .k {
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .td-modal-kv .v {
+            color: var(--text-primary);
+        }
         
         .heatmap-grid {
             display: grid;
@@ -61,25 +285,49 @@
             aspect-ratio: 1;
             border-radius: 4px;
             background: var(--bg-tertiary);
-            margin: 1px;
+            border: 1px solid var(--border-subtle);
             transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-primary);
         }
         
         .heatmap-cell:hover {
-            transform: scale(1.2);
+            transform: scale(1.1);
             z-index: 10;
+            box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+        }
+        
+        .simplified-cell {
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .simplified-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(52, 211, 153, 0.3);
+        }
+        
+        .simplified-cell:hover .heatmap-count {
+            display: block !important;
         }
 
         .heatmap-cell.level-1 {
-            background: rgba(52, 211, 153, 0.4);
+            background: rgba(52, 211, 153, 0.3);
+            border-color: rgba(52, 211, 153, 0.5);
         }
 
         .heatmap-cell.level-2 {
-            background: rgba(52, 211, 153, 0.7);
+            background: rgba(52, 211, 153, 0.6);
+            border-color: rgba(52, 211, 153, 0.8);
         }
 
         .heatmap-cell.level-3 {
-            background: #34d399;
+            background: rgba(52, 211, 153, 0.9);
+            border-color: #34d399;
         }
 
         .heatmap-label {
@@ -331,9 +579,88 @@
         }
         
         @media (max-width: 768px) {
-            .dashboard-grid {
+            .teacher-dashboard-grid {
                 grid-template-columns: 1fr;
                 padding: 1rem;
+                gap: 1rem;
+            }
+            
+            .priority-overview {
+                grid-row: span 1;
+            }
+            
+            .priority-alerts {
+                grid-column: span 1 !important;
+            }
+            
+            .quick-actions div {
+                grid-template-columns: 1fr !important;
+                gap: 0.75rem !important;
+            }
+            
+            .btn-small {
+                padding: 0.75rem 1rem;
+                font-size: 0.8rem;
+                min-height: 44px; /* Touch target size */
+            }
+            
+            .study-item-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+            
+            .study-item-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .quick-broadcast div {
+                grid-template-columns: 1fr !important;
+                gap: 0.75rem !important;
+            }
+            
+            .quick-broadcast .btn {
+                width: 100%;
+            }
+            
+            .risk-list {
+                max-height: 300px;
+            }
+            
+            .recent-classes {
+                max-height: 300px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .teacher-dashboard-grid {
+                padding: 0.5rem;
+            }
+            
+            .island {
+                padding: 1rem;
+            }
+            
+            .content-header {
+                padding: 1rem 1rem 0.5rem !important;
+            }
+            
+            .content-header h1 {
+                font-size: 1.8rem !important;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.5rem;
+            }
+            
+            .stat-card {
+                padding: 0.75rem;
+            }
+            
+            .stat-number {
+                font-size: 1.4rem;
             }
         }
     </style>
@@ -341,6 +668,7 @@
 
 <body>
     {% include '_teacher_topnav.html' %}
+    <div id="classes-data" style="display: none;">{{ classes|tojson if classes else '[]' }}</div>
     <div class="dashboard-layout">
         <main class="main-content" style="margin-left: 0;">
             <div class="content-header" style="padding: 2rem 2rem 1rem;">
@@ -358,13 +686,14 @@
             {% endif %}
             {% endwith %}
 
-            <div class="dashboard-grid">
-                <!-- Stats Overview -->
-                <div class="island">
+            <div class="teacher-dashboard-grid">
+                <div class="dashboard-grid-top">
+                <!-- Priority Overview -->
+                <div class="island priority-overview area-overview">
                     <div class="island-header">
                         <h3 class="island-title">
                             <span class="material-symbols-outlined" style="color: var(--accent);">dashboard</span>
-                            Overview
+                            Quick Overview
                         </h3>
                     </div>
                     <div class="stats-grid">
@@ -377,96 +706,226 @@
                             <div class="stat-label">At Risk</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number">30</div>
+                            <div class="stat-number">{{ days_active if days_active else 1 }}</div>
                             <div class="stat-label">Days Active</div>
                         </div>
                     </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="quick-actions" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                        <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-muted);">Quick Actions</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                            <a href="{{ url_for('institution_teacher_create_class') }}" class="btn btn-primary btn-small">
+                                <span class="material-symbols-outlined" style="font-size: 0.8rem;">add</span>
+                                New Class
+                            </a>
+                            <a class="btn btn-secondary btn-small" href="#broadcast">
+                                <span class="material-symbols-outlined" style="font-size: 0.8rem;">campaign</span>
+                                Broadcast
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Behavioral Heatmap -->
-                <div class="island" style="grid-column: span 2;">
+                <!-- Simplified Activity Heatmap -->
+                <div class="island area-heatmap">
                     <div class="island-header">
                         <h3 class="island-title">
                             <span class="material-symbols-outlined" style="color: var(--accent);">schedule</span>
-                            Classroom Activity Heatmap
+                            Weekly Activity Pattern
                         </h3>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: 2px; margin-right: 4px;"></span> Low
+                            <span style="display: inline-block; width: 12px; height: 12px; background: rgba(52, 211, 153, 0.3); border: 1px solid rgba(52, 211, 153, 0.5); border-radius: 2px; margin: 0 4px 0 8px;"></span> Medium
+                            <span style="display: inline-block; width: 12px; height: 12px; background: rgba(52, 211, 153, 0.9); border-radius: 2px; margin: 0 4px 0 8px;"></span> High
+                        </div>
                     </div>
                     <div id="heatmapContainer" class="heatmap-grid"
-                        style="grid-template-columns: 40px repeat(12, 1fr) 10px repeat(12, 1fr); margin-top:16px;">
+                        style="grid-template-columns: 50px repeat(4, 1fr); margin-top:16px; gap: 4px;">
+                        <!-- Time labels -->
                         <div></div>
-                        {% for h in range(24) %}
-                        <div style="font-size: 8px; text-align: center; color: var(--text-muted);">{{ h }}</div>
-                        {% if h == 11 %} <div></div> {% endif %}
+                        {% set periods = ['Morning', 'Afternoon', 'Evening', 'Night'] %}
+                        {% for period in periods %}
+                        <div style="font-size: 10px; text-align: center; color: var(--text-muted); font-weight: 600;">{{ period[:3] }}</div>
                         {% endfor %}
 
-                        {% set days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+                        <!-- Day rows -->
+                        {% set days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] %}
+                        {% set period_names = ['Morning', 'Afternoon', 'Evening', 'Night'] %}
                         {% for d in range(7) %}
-                        <div class="heatmap-label" style="font-size:10px; color:var(--text-muted);">{{ days[d] }}
-                        </div>
-                        {% for h in range(24) %}
+                        <div class="heatmap-label" style="font-size: 12px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center;">{{ days[d] }}</div>
+                        
+                        <!-- 3-hour time blocks -->
+                        {% for h in [6, 12, 18, 22] %} <!-- Morning, Afternoon, Evening, Night -->
+                        {% set period_index = [0, 1, 2, 3][loop.index0] %}
                         {% set key = d|string + "-" + h|string %}
-                        {% set count = heatmap_data.get(key, 0) %}
+                        {% set total_count = heatmap_data.get(key, 0) %}
                         {% set level = 0 %}
-                        {% if count > 5 %} {% set level = 3 %}
-                        {% elif count > 2 %} {% set level = 2 %}
-                        {% elif count > 0 %} {% set level = 1 %}
+                        {% if total_count > 10 %} {% set level = 3 %}
+                        {% elif total_count > 5 %} {% set level = 2 %}
+                        {% elif total_count > 0 %} {% set level = 1 %}
                         {% endif %}
-                        <div class="heatmap-cell level-{{ level }}"
-                            title="{{ days[d] }} {{ h }}:00 - {{ count }} sessions"></div>
-                        {% if h == 11 %} <div class="heatmap-spacer"></div> {% endif %}
+                        <div class="heatmap-cell level-{{ level }} simplified-cell"
+                            title="{{ days[d] }} {{ period_names[period_index] }} - {{ total_count }} study sessions (Level {{ level }})"
+                            style="aspect-ratio: 1.5; min-height: 30px; position: relative;">
+                            {% if total_count > 0 %}
+                            <span class="heatmap-count" style="position: absolute; top: 2px; right: 2px; font-size: 0.6rem; font-weight: 700; color: rgba(255,255,255,0.9); background: rgba(0,0,0,0.3); padding: 1px 3px; border-radius: 2px; display: none;">
+                                {{ total_count }}
+                            </span>
+                            {% endif %}
+                        </div>
                         {% endfor %}
                         {% endfor %}
+                    </div>
+                    <div style="text-align: center; margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+                        Showing aggregated activity patterns across 4 time periods
                     </div>
                 </div>
 
-                <!-- Active Classes -->
-                <div class="island">
+                <!-- Recent Classes -->
+                <div class="island recent-classes area-classes">
                     <div class="island-header">
                         <h3 class="island-title">
                             <span class="material-symbols-outlined" style="color: var(--accent);">class</span>
-                            Active Classes
+                            Recent Classes
                         </h3>
-                        <a href="{{ url_for('institution_teacher_create_class') }}"
-                            class="btn btn-primary btn-small">
-                            <span class="material-symbols-outlined" style="font-size: 0.9rem;">add</span>
-                            Add New
+                        <a href="{{ url_for('institution_teacher_classes') }}"
+                            class="btn btn-secondary btn-small">
+                            View All
                         </a>
                     </div>
 
                     {% if classes %}
-                    {% for cls in classes %}
+                    {% for cls in classes[:3] %}
                     <div class="study-item" style="display: flex; align-items: center; justify-content: space-between;">
                         <div class="study-item-body">
                             <div class="study-item-title">{{ cls.get('name', 'Class') }}</div>
-                            <div class="study-item-meta">{{ cls.get('board', '') }} · Grade {{ cls.get('grade', '') }} · Code: <strong>{{ cls.get('invite_code', 'N/A') }}</strong></div>
+                            <div class="study-item-meta">{{ cls.get('board', '') }} · Grade {{ cls.get('grade', '') }} · {{ (cls.get('student_uids', [])|length) }} students</div>
                         </div>
                         <div class="study-item-actions">
-                            <a href="{{ url_for('institution_teacher_upload_file', class_id=cls.id) }}" class="btn btn-small btn-primary">Upload Files</a>
-                            <a href="{{ url_for('manage_class_syllabus', class_id=cls.id) }}"
-                                class="btn btn-small btn-secondary">Syllabus</a>
+                            <a href="{{ url_for('institution_teacher_upload_file', class_id=cls.id) }}" class="btn btn-small btn-primary">Upload</a>
                         </div>
                     </div>
                     {% endfor %}
+                    {% if classes|length > 3 %}
+                    <div style="text-align: center; padding: 1rem;">
+                        <a href="{{ url_for('institution_teacher_classes') }}" style="color: var(--accent); text-decoration: none; font-weight: 600;">
+                            View all {{ classes|length }} classes →
+                        </a>
+                    </div>
+                    {% endif %}
                     {% else %}
                     <div class="empty-state">
-                        <span class="material-symbols-outlined" style="font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 1rem;">class</span>
-                        <p>No classes found. Create one to get started.</p>
+                        <span class="material-symbols-outlined" style="font-size: 2rem; opacity: 0.3; display: block; margin-bottom: 0.5rem;">class</span>
+                        <p>No classes yet. Create your first class!</p>
                     </div>
                     {% endif %}
                 </div>
 
-                <!-- Students at Risk -->
-                <div class="island" style="grid-column: span 2;">
+                <!-- Quick Broadcast -->
+                <div class="island area-broadcast" id="broadcast">
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined" style="color: var(--accent);">campaign</span>
+                            Quick Broadcast
+                        </h3>
+                    </div>
+                    <form method="POST" action="{{ url_for('broadcast_message') }}" style="margin-top:12px;">
+                        <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 0.5rem; align-items: end;">
+                            <select name="class_id" class="form-input">
+                                <option value="">All Classes</option>
+                                {% for cls in classes %}
+                                <option value="{{ cls.id }}">{{ cls.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <input name="message" placeholder="Quick message to students..." required
+                                class="form-input" style="min-height: 40px;">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.25rem;">send</span>
+                                Send
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Quick Teacher Actions -->
+                <div class="island area-actions">
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined" style="color: var(--accent);">bolt</span>
+                            Actions
+                        </h3>
+                    </div>
+                    <div style="display: grid; gap: 0.75rem;">
+                        <a href="{{ url_for('institution_teacher_classes') }}" class="btn btn-secondary" style="justify-content: flex-start;">
+                            <span class="material-symbols-outlined" style="font-size: 1rem; margin-right: 0.5rem;">school</span>
+                            View Classes
+                        </a>
+                        <a href="{{ url_for('institution_teacher_create_class') }}" class="btn btn-secondary" style="justify-content: flex-start;">
+                            <span class="material-symbols-outlined" style="font-size: 1rem; margin-right: 0.5rem;">add</span>
+                            Create Class
+                        </a>
+                        <button type="button" id="downloadClassReportBtn" class="btn btn-primary" style="justify-content: flex-start;">
+                            <span class="material-symbols-outlined" style="font-size: 1rem; margin-right: 0.5rem;">description</span>
+                            Download Class Report
+                        </button>
+                        <button type="button" id="openCustomSyllabusBtn" class="btn btn-secondary" style="justify-content: flex-start;">
+                            <span class="material-symbols-outlined" style="font-size: 1rem; margin-right: 0.5rem;">upload_file</span>
+                            Add Custom Syllabus
+                        </button>
+                    </div>
+                    <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted);">
+                        Reports and custom syllabi are per-class.
+                    </div>
+                </div>
+
+                </div> <!-- /dashboard-grid-top -->
+
+                <div class="dashboard-grid-bottom">
+
+                <!-- AI Clusters / Study Pattern Insights -->
+                <div class="island" id="clustersIsland">
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined" style="color: var(--accent);">pattern</span>
+                            Study Pattern Insights
+                        </h3>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div class="ai-badge">AI Generated</div>
+                            <button id="clearAnalyticsBtn" class="btn btn-small btn-secondary" style="font-size: 0.8rem;" title="Clear AI analysis and regenerate">
+                                <span class="material-symbols-outlined" style="font-size: 0.9rem;">refresh</span>
+                                Clear & Regenerate
+                            </button>
+                        </div>
+                    </div>
+                    <div id="automatedPatternsContainer">
+                        <div style="text-align: center; padding: 2rem;">
+                            <span class="material-symbols-outlined" style="font-size: 2rem; animation: spin 1s linear infinite;">refresh</span>
+                            <p style="margin-top: 1rem;">Analyzing study patterns...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Priority Alerts: At Risk Students -->
+                <div class="island priority-alerts" id="atRiskIsland">
                     <div class="island-header">
                         <h3 class="island-title">
                             <span class="material-symbols-outlined" style="color: #ef4444;">warning</span>
-                            Students at Risk (AI-Enhanced)
+                            Priority: Students Needing Attention
                         </h3>
-                        <div class="ai-badge">AI DETECTED</div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            {% if at_risk_students %}
+                            <div class="ai-badge">{{ at_risk_students|length }} Students</div>
+                            {% endif %}
+                            <button id="clearStudentAnalyticsBtn" class="btn btn-small btn-secondary" style="font-size: 0.8rem;" title="Clear all student AI analysis and regenerate">
+                                <span class="material-symbols-outlined" style="font-size: 0.9rem;">refresh</span>
+                                Clear Student AI
+                            </button>
+                        </div>
                     </div>
-                    <div class="risk-list">
+                    <div class="risk-list" style="max-height: 400px; overflow-y: auto;">
                         {% if at_risk_students %}
-                        {% for student in at_risk_students %}
+                        {% for student in at_risk_students[:3] %}
                         <div class="study-item student-risk-item {% if student.ai_detected %}ai-detected{% else %}rule-based{% endif %}">
                             <div class="study-item-body">
                                 <div class="study-item-title">
@@ -478,7 +937,7 @@
                                 <div class="study-item-meta">{{ student.class }} · {{ student.status.title() }}</div>
                                 {% if student.ai_detected %}
                                 <div class="risk-explanation" title="{{ student.explanation }}">
-                                    {{ student.explanation[:50] }}{% if student.explanation|length > 50 %}...{% endif %}
+                                    {{ student.explanation[:60] }}{% if student.explanation|length > 60 %}...{% endif %}
                                 </div>
                                 {% if student.readiness_score %}
                                 <div class="readiness-score">
@@ -491,6 +950,20 @@
                                 {% endif %}
                             </div>
                             <div class="study-item-actions">
+                                <button class="btn btn-small btn-secondary student-view-btn"
+                                    data-payload="{{ {
+                                        'name': student.name,
+                                        'class': student.class,
+                                        'status': student.status,
+                                        'ai_detected': student.ai_detected,
+                                        'explanation': student.explanation,
+                                        'readiness_score': student.readiness_score,
+                                        'readiness_summary': student.readiness_summary,
+                                        'key_factors': student.key_factors
+                                    }|tojson|urlencode }}">
+                                    <span class="material-symbols-outlined" style="font-size: 0.9rem;">visibility</span>
+                                    View
+                                </button>
                                 {% if student.ai_detected and student.key_factors %}
                                 <button class="btn btn-small btn-secondary suggestion-btn"
                                     data-uid="{{ student.uid }}"
@@ -508,62 +981,39 @@
                             </div>
                         </div>
                         {% endfor %}
+                        {% if at_risk_students|length > 3 %}
+                        <div style="text-align: center; padding: 1rem;">
+                            <a href="#" style="color: var(--accent); text-decoration: none; font-weight: 600;">
+                                View all {{ at_risk_students|length }} at-risk students →
+                            </a>
+                        </div>
+                        {% endif %}
                         {% else %}
                         <div class="empty-state">
                             <span class="material-symbols-outlined" style="font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 1rem;">check_circle</span>
-                            <p>No students currently at risk. Great job!</p>
+                            <p>All students are doing well! Great job!</p>
                         </div>
                         {% endif %}
                     </div>
                 </div>
 
-                <!-- Study Patterns -->
-                {% if classes %}
-                <div class="island">
-                    <div class="island-header">
-                        <h3 class="island-title">
-                            <span class="material-symbols-outlined" style="color: var(--accent);">pattern</span>
-                            Study Patterns
-                        </h3>
-                        <button class="btn btn-small btn-primary" id="analyzePatternsBtn">
-                            <span class="material-symbols-outlined" style="font-size: 0.9rem;">analytics</span>
-                            Analyze
-                        </button>
-                    </div>
-                    <div id="patternsContainer">
-                        <div class="empty-state">
-                            <span class="material-symbols-outlined" style="font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 1rem;">pattern</span>
-                            <p>Click "Analyze" to discover study patterns in your classes</p>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
+                </div> <!-- /dashboard-grid-bottom -->
 
-                <!-- Broadcast -->
-                <div class="island" style="grid-column: span 2;">
-                    <div class="island-header">
-                        <h3 class="island-title">
-                            <span class="material-symbols-outlined" style="color: var(--accent);">campaign</span>
-                            Class Broadcast
-                        </h3>
-                    </div>
-                    <form method="POST" action="{{ url_for('broadcast_message') }}" style="margin-top:12px;">
-                        <select name="class_id" class="form-input" style="margin-bottom:12px;">
-                            <option value="">Select a Class (Optional)</option>
-                            {% for cls in classes %}
-                            <option value="{{ cls.id }}">{{ cls.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <textarea name="message" placeholder="Type message for your students..." required
-                            class="form-input" style="height:80px; margin-bottom:12px; resize: vertical;"></textarea>
-                        <button type="submit" class="btn btn-secondary" style="width: 100%;">
-                            <span class="material-symbols-outlined" style="font-size: 0.9rem; margin-right: 0.5rem;">send</span>
-                            Send to Students
-                        </button>
-                    </form>
-                </div>
             </div>
         </main>
+    </div>
+
+    <div id="modalOverlay" class="td-modal-overlay" aria-hidden="true">
+        <div class="td-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="td-modal-header">
+                <h3 id="modalTitle" class="td-modal-title"></h3>
+                <button type="button" class="td-modal-close" data-modal-close>
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="modalBody" class="td-modal-body"></div>
+            <div id="modalFooter" class="td-modal-footer"></div>
+        </div>
     </div>
 
     <script>
@@ -573,80 +1023,476 @@
             if (savedTheme) root.setAttribute("data-theme", savedTheme);
         })();
 
-        document.querySelectorAll('.nudge-btn').forEach(btn => {
-            btn.onclick = async () => {
-                const studentUid = btn.dataset.uid;
-                const message = prompt("Enter nudge message:", "Your teacher has sent a reminder to check your progress.");
-                if (message === null) return;
+        // Loading state management
+        function showLoading(element, text = 'Loading...') {
+            element.classList.add('loading');
+            const originalContent = element.innerHTML;
+            element.dataset.originalContent = originalContent;
+            element.innerHTML = `<span class="material-symbols-outlined" style="font-size: 0.9rem;">hourglass_empty</span> ${text}`;
+        }
 
-                const res = await fetch('/institution/nudge', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ student_uid: studentUid, message: message })
+        function hideLoading(element) {
+            element.classList.remove('loading');
+            if (element.dataset.originalContent) {
+                element.innerHTML = element.dataset.originalContent;
+                delete element.dataset.originalContent;
+            }
+        }
+
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const modalFooter = document.getElementById('modalFooter');
+
+        function closeModal() {
+            if (!modalOverlay) return;
+            modalOverlay.classList.remove('open');
+            modalOverlay.setAttribute('aria-hidden', 'true');
+            modalTitle.textContent = '';
+            modalBody.innerHTML = '';
+            modalFooter.innerHTML = '';
+        }
+
+        function openModal({ title, bodyHtml, footerHtml }) {
+            if (!modalOverlay) return;
+            modalTitle.innerHTML = title || '';
+            modalBody.innerHTML = bodyHtml || '';
+            modalFooter.innerHTML = footerHtml || '';
+            modalOverlay.classList.add('open');
+            modalOverlay.setAttribute('aria-hidden', 'false');
+        }
+
+        function showStatusModal({ title, message }) {
+            openModal({
+                title: title || 'Info',
+                bodyHtml: `<div style="font-size: 0.95rem; line-height: 1.5; color: var(--text-primary);">${message}</div>`,
+                footerHtml: `<button type="button" class="btn btn-primary" data-modal-close>OK</button>`,
+            });
+        }
+
+        function showConfirmModal({ title, message, confirmText = 'Confirm', cancelText = 'Cancel' }) {
+            return new Promise((resolve) => {
+                openModal({
+                    title: title || 'Confirm',
+                    bodyHtml: `<div style="font-size: 0.95rem; line-height: 1.5; color: var(--text-primary);">${message}</div>`,
+                    footerHtml: `
+                        <button type="button" class="btn btn-secondary" id="modalCancelBtn">${cancelText}</button>
+                        <button type="button" class="btn btn-primary" id="modalConfirmBtn">${confirmText}</button>
+                    `,
                 });
 
-                const data = await res.json();
-                if (data.success) {
-                    btn.textContent = "Sent!";
-                    btn.disabled = true;
+                const cancelBtn = document.getElementById('modalCancelBtn');
+                const confirmBtn = document.getElementById('modalConfirmBtn');
+                if (cancelBtn) {
+                    cancelBtn.onclick = () => {
+                        closeModal();
+                        resolve(false);
+                    };
                 }
-            };
-        });
+                if (confirmBtn) {
+                    confirmBtn.onclick = () => {
+                        closeModal();
+                        resolve(true);
+                    };
+                }
+            });
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        function openStudentRiskModal(payload) {
+            const p = payload || {};
+            const title = `<span class="material-symbols-outlined" style="color: var(--accent);">warning</span> ${escapeHtml(p.name || 'Student')}`;
+
+            const readiness = (p.readiness_score === null || p.readiness_score === undefined) ? '' : `${escapeHtml(p.readiness_score)}%`;
+            const factors = Array.isArray(p.key_factors) ? p.key_factors : [];
+            const factorsHtml = factors.length
+                ? `<div style="margin-top: 0.75rem;"><div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700; margin-bottom: 0.25rem;">Key factors</div><div style="display:flex; flex-wrap:wrap; gap:0.5rem;">${factors.map(f => `<span class=\"ai-badge\" style=\"background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border);\">${escapeHtml(f)}</span>`).join('')}</div></div>`
+                : '';
+
+            const body = `
+                <div class="td-modal-kv">
+                    <div class="k">Class</div><div class="v">${escapeHtml(p.class || '')}</div>
+                    <div class="k">Status</div><div class="v">${escapeHtml((p.status || '').toString())}</div>
+                    <div class="k">AI detected</div><div class="v">${p.ai_detected ? 'Yes' : 'No'}</div>
+                    ${readiness ? `<div class=\"k\">Readiness</div><div class=\"v\">${readiness}</div>` : ''}
+                </div>
+                <div style="margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">${escapeHtml(p.explanation || '')}</div>
+                ${p.readiness_summary ? `<div style=\"margin-top: 0.75rem; color: var(--text-muted); font-size: 0.9rem;\">${escapeHtml(p.readiness_summary)}</div>` : ''}
+                ${factorsHtml}
+            `;
+
+            openModal({
+                title,
+                bodyHtml: body,
+                footerHtml: `<button type="button" class="btn btn-primary" data-modal-close>Close</button>`,
+            });
+        }
+
+        function openNudgeModal({ uid, name, defaultMessage }) {
+            const safeName = escapeHtml(name || 'Student');
+            const safeDefault = escapeHtml(defaultMessage || 'Please check in with your studies and let me know if you need help.');
+
+            openModal({
+                title: `<span class="material-symbols-outlined" style="color: var(--accent);">notifications</span> Nudge ${safeName}`,
+                bodyHtml: `
+                    <div style="display: grid; gap: 0.75rem;">
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">Send a quick message (only this student).</div>
+                        <textarea id="nudgeMessageInput" class="td-modal-textarea">${safeDefault}</textarea>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button type="button" class="btn btn-secondary btn-small" data-template="Gentle reminder: try a 25-minute focused session today.">Gentle</button>
+                            <button type="button" class="btn btn-secondary btn-small" data-template="Quick check-in: how are your studies going? Reply if you need help.">Check-in</button>
+                            <button type="button" class="btn btn-secondary btn-small" data-template="Exam focus: prioritize weak topics and revise for 30 minutes today.">Exam</button>
+                        </div>
+                    </div>
+                `,
+                footerHtml: `
+                    <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+                    <button type="button" class="btn btn-primary" id="sendNudgeBtn">Send</button>
+                `,
+            });
+
+            const input = document.getElementById('nudgeMessageInput');
+            modalBody.querySelectorAll('[data-template]').forEach((b) => {
+                b.addEventListener('click', () => {
+                    if (input) input.value = b.getAttribute('data-template') || input.value;
+                });
+            });
+
+            const sendBtn = document.getElementById('sendNudgeBtn');
+            if (sendBtn) {
+                sendBtn.onclick = async () => {
+                    const message = input ? input.value.trim() : '';
+                    if (!message) {
+                        showStatusModal({ title: 'Missing message', message: 'Please enter a message before sending.' });
+                        return;
+                    }
+
+                    showLoading(sendBtn, 'Sending...');
+                    try {
+                        const res = await fetch('/institution/nudge', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ student_uid: uid, message }),
+                        });
+
+                        const data = await res.json();
+                        if (data && data.success) {
+                            closeModal();
+                            showStatusModal({ title: 'Sent', message: 'Nudge sent successfully.' });
+                        } else {
+                            hideLoading(sendBtn);
+                            showStatusModal({ title: 'Failed', message: 'Failed to send nudge. Please try again.' });
+                        }
+                    } catch (e) {
+                        hideLoading(sendBtn);
+                        showStatusModal({ title: 'Network error', message: 'Please check your connection and try again.' });
+                    }
+                };
+            }
+        }
 
         // Analytics JavaScript
         document.addEventListener('DOMContentLoaded', function() {
-            // Handle nudge buttons
+            if (modalOverlay) {
+                modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === modalOverlay) closeModal();
+                });
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && modalOverlay.classList.contains('open')) closeModal();
+                });
+                modalOverlay.querySelectorAll('[data-modal-close]').forEach((btn) => {
+                    btn.addEventListener('click', closeModal);
+                });
+                modalOverlay.addEventListener('click', (e) => {
+                    const t = e.target;
+                    if (t && t.closest && t.closest('[data-modal-close]')) closeModal();
+                });
+            }
+
+            // Handle nudge buttons (modal-based)
             document.querySelectorAll('.nudge-btn').forEach(btn => {
-                btn.addEventListener('click', async function() {
+                btn.addEventListener('click', function() {
                     const uid = this.dataset.uid;
                     const message = this.dataset.message || 'Please check in with your studies and let me know if you need help.';
-                    
-                    if (confirm(`Send nudge to student? Message: "${message}"`)) {
-                        try {
-                            const response = await fetch('/institution/nudge', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                    student_uid: uid,
-                                    message: message
-                                })
-                            });
-                            
-                            if (response.ok) {
-                                this.textContent = 'Sent!';
-                                this.disabled = true;
-                                setTimeout(() => {
-                                    this.textContent = 'Nudge';
-                                    this.disabled = false;
-                                }, 2000);
-                            } else {
-                                alert('Failed to send nudge');
-                            }
-                        } catch (error) {
-                            console.error('Error sending nudge:', error);
-                            alert('Error sending nudge');
-                        }
+                    const name = this.closest('.student-risk-item')?.querySelector('.study-item-title')?.childNodes?.[0]?.textContent?.trim() || 'Student';
+                    openNudgeModal({ uid, name, defaultMessage: message });
+                });
+            });
+
+            // At-risk "View" buttons
+            document.querySelectorAll('.student-view-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    try {
+                        const raw = decodeURIComponent(this.dataset.payload || '');
+                        const payload = JSON.parse(raw);
+                        openStudentRiskModal(payload);
+                    } catch (e) {
+                        showStatusModal({ title: 'Error', message: 'Unable to open student details.' });
                     }
                 });
             });
+            
+            // Automated study pattern analysis
+            const classesDataElement = document.getElementById('classes-data');
+            const classesData = classesDataElement ? JSON.parse(classesDataElement.textContent) : [];
+            if (classesData && classesData.length > 0) {
+                // Analyze study patterns automatically
+                setTimeout(() => {
+                    analyzeStudyPatterns(classesData);
+                }, 400);
+            }
+            
+            async function analyzeStudyPatterns(classesData) {
+                const container = document.getElementById('automatedPatternsContainer');
+                if (!container) return;
+                try {
+                    // Analyze each class
+                    const allClusters = [];
+                    for (const cls of classesData) {
+                        const response = await fetch(`/api/analytics/cluster/class/${cls.id}`, {
+                            method: 'POST'
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.clusters && data.clusters.length > 0) {
+                                allClusters.push({
+                                    className: cls.name,
+                                    clusters: data.clusters,
+                                    cached: data.cached || false
+                                });
+                            }
+                        }
+                    }
+                    
+                    // Display results
+                    displayAutomatedStudyPatterns(allClusters);
+                    
+                } catch (error) {
+                    console.error('Error analyzing patterns:', error);
+                    container.innerHTML = '<p style="color: #ef4444;">Unable to load study patterns at this time.</p>';
+                }
+            }
+            
+            function displayAutomatedStudyPatterns(allClusters) {
+                const container = document.getElementById('automatedPatternsContainer');
+                
+                if (allClusters.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-muted);">Not enough study activity to generate patterns yet.</p>';
+                    return;
+                }
+                
+                let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">';
+                
+                allClusters.forEach(classData => {
+                    classData.clusters.forEach((cluster, idx) => {
+                        const payload = encodeURIComponent(JSON.stringify({
+                            className: classData.className,
+                            label: cluster.label,
+                            description: cluster.description,
+                            performance_note: cluster.performance_note || '',
+                            student_count: (cluster.student_uids || []).length,
+                        }));
+
+                        html += `
+                            <div class="study-item" style="border-left: 4px solid var(--accent);">
+                                <div class="study-item-body">
+                                    <div class="study-item-title" style="display:flex; align-items:center; justify-content: space-between; gap: 0.75rem;">
+                                        <span>${cluster.label}</span>
+                                        <button class="btn btn-small btn-secondary cluster-view-btn" data-payload="${payload}">
+                                            <span class="material-symbols-outlined" style="font-size: 0.9rem;">open_in_new</span>
+                                            View
+                                        </button>
+                                    </div>
+                                    <div class="study-item-meta">${classData.className} · ${(cluster.student_uids || []).length} students</div>
+                                    <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 0.5rem;">${cluster.description}</div>
+                                </div>
+                            </div>`;
+                    });
+                });
+                
+                html += '</div>';
+                container.innerHTML = html;
+                
+                // Wire cluster view buttons
+                container.querySelectorAll('.cluster-view-btn').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        try {
+                            const raw = decodeURIComponent(btn.dataset.payload || '');
+                            const p = JSON.parse(raw);
+                            const title = `<span class="material-symbols-outlined" style="color: var(--accent);">pattern</span> ${escapeHtml(p.label || 'Cluster')}`;
+                            const body = `
+                                <div class="td-modal-kv">
+                                    <div class="k">Class</div><div class="v">${escapeHtml(p.className || '')}</div>
+                                    <div class="k">Students</div><div class="v">${escapeHtml(p.student_count || 0)}</div>
+                                </div>
+                                <div style="margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">${escapeHtml(p.description || '')}</div>
+                                ${p.performance_note ? `<div style="margin-top: 0.75rem; color: var(--text-muted); font-size: 0.85rem;">${escapeHtml(p.performance_note)}</div>` : ''}
+                            `;
+                            openModal({
+                                title,
+                                bodyHtml: body,
+                                footerHtml: `<button type="button" class="btn btn-primary" data-modal-close>Close</button>`,
+                            });
+                        } catch (e) {
+                            showStatusModal({ title: 'Error', message: 'Unable to open this insight.' });
+                        }
+                    });
+                });
+
+                // Add clear analytics button functionality
+                const clearBtn = document.getElementById('clearAnalyticsBtn');
+                if (clearBtn && !clearBtn.dataset.bound) {
+                    clearBtn.dataset.bound = '1';
+                    clearBtn.addEventListener('click', async function() {
+                        const ok = await showConfirmModal({
+                            title: 'Clear AI Insights?',
+                            message: 'This will remove existing insights and regenerate new ones.',
+                            confirmText: 'Clear & Regenerate',
+                            cancelText: 'Cancel',
+                        });
+                        if (!ok) return;
+                        
+                        try {
+                            // Disable button and show loading
+                            this.disabled = true;
+                            this.innerHTML = '<span class="material-symbols-outlined" style="font-size: 0.9rem;">hourglass_empty</span> Clearing...';
+                            
+                            // Clear cache for all classes
+                            for (const cls of classesData) {
+                                const clearResponse = await fetch(`/api/analytics/clear/class/${cls.id}`, {
+                                    method: 'POST'
+                                });
+                                
+                                if (!clearResponse.ok) {
+                                    console.error(`Failed to clear analytics for class ${cls.id}`);
+                                }
+                            }
+                            
+                            // Re-analyze with fresh data
+                            container.innerHTML = '<div style="text-align: center; padding: 2rem;"><span class="material-symbols-outlined" style="font-size: 2rem; animation: spin 1s linear infinite;">refresh</span><p>Regenerating study patterns...</p></div>';
+                            
+                            const allClusters = [];
+                            for (const cls of classesData) {
+                                const response = await fetch(`/api/analytics/cluster/class/${cls.id}`, {
+                                    method: 'POST'
+                                });
+                                
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    if (data.clusters && data.clusters.length > 0) {
+                                        allClusters.push({
+                                            className: cls.name,
+                                            clusters: data.clusters,
+                                            cached: data.cached || false
+                                        });
+                                    }
+                                }
+                            }
+                            
+                            // Display fresh results
+                            displayAutomatedStudyPatterns(allClusters);
+                            
+                        } catch (error) {
+                            console.error('Error clearing analytics:', error);
+                            container.innerHTML = '<p style="color: #ef4444;">Error clearing analytics. Please try again.</p>';
+                        } finally {
+                            // Reset button
+                            this.disabled = false;
+                            this.innerHTML = '<span class="material-symbols-outlined" style="font-size: 0.9rem;">refresh</span> Clear & Regenerate';
+                        }
+                    });
+                }
+            }
+
+            function openClassPickerModal({ title, confirmText, onConfirm }) {
+                const optionsHtml = (classesData || []).map((c) => {
+                    const name = escapeHtml(c.name || 'Class');
+                    return `<option value="${escapeHtml(c.id)}">${name}</option>`;
+                }).join('');
+
+                openModal({
+                    title: title || 'Select class',
+                    bodyHtml: `
+                        <div style="display:grid; gap: 0.75rem;">
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">Choose a class:</div>
+                            <select id="classPickerSelect" class="form-input">${optionsHtml}</select>
+                        </div>
+                    `,
+                    footerHtml: `
+                        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+                        <button type="button" class="btn btn-primary" id="classPickerConfirmBtn">${confirmText || 'Continue'}</button>
+                    `,
+                });
+
+                const confirmBtn = document.getElementById('classPickerConfirmBtn');
+                const select = document.getElementById('classPickerSelect');
+                if (confirmBtn) {
+                    confirmBtn.onclick = () => {
+                        const classId = select ? select.value : '';
+                        if (!classId) {
+                            showStatusModal({ title: 'Missing class', message: 'Please select a class.' });
+                            return;
+                        }
+                        closeModal();
+                        if (onConfirm) onConfirm(classId);
+                    };
+                }
+            }
+
+            const downloadReportBtn = document.getElementById('downloadClassReportBtn');
+            if (downloadReportBtn && !downloadReportBtn.dataset.bound) {
+                downloadReportBtn.dataset.bound = '1';
+                downloadReportBtn.addEventListener('click', () => {
+                    if (!classesData || classesData.length === 0) {
+                        showStatusModal({ title: 'No classes', message: 'Create a class to generate a report.' });
+                        return;
+                    }
+                    openClassPickerModal({
+                        title: 'Download class report',
+                        confirmText: 'Download',
+                        onConfirm: (classId) => {
+                            window.location.href = `/institution/teacher/class/${classId}/report`;
+                        },
+                    });
+                });
+            }
+
+            const customSyllabusBtn = document.getElementById('openCustomSyllabusBtn');
+            if (customSyllabusBtn && !customSyllabusBtn.dataset.bound) {
+                customSyllabusBtn.dataset.bound = '1';
+                customSyllabusBtn.addEventListener('click', () => {
+                    if (!classesData || classesData.length === 0) {
+                        showStatusModal({ title: 'No classes', message: 'Create a class to add a custom syllabus.' });
+                        return;
+                    }
+                    openClassPickerModal({
+                        title: 'Add custom syllabus',
+                        confirmText: 'Open',
+                        onConfirm: (classId) => {
+                            window.location.href = `/institution/class/${classId}/custom-syllabus`;
+                        },
+                    });
+                });
+            }
 
             // Handle suggestion buttons
             document.querySelectorAll('.suggestion-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const suggestion = this.dataset.suggestion;
                     const uid = this.dataset.uid;
-                    
-                    // Find the nudge button and update its message
                     const nudgeBtn = document.querySelector(`.nudge-btn[data-uid="${uid}"]`);
-                    if (nudgeBtn) {
-                        nudgeBtn.dataset.message = suggestion;
-                        nudgeBtn.style.background = '#f59e0b'; // Highlight that message is updated
-                        setTimeout(() => {
-                            nudgeBtn.style.background = ''; // Reset color
-                        }, 1000);
-                    }
+                    if (!nudgeBtn) return;
+                    const name = nudgeBtn.closest('.student-risk-item')?.querySelector('.study-item-title')?.childNodes?.[0]?.textContent?.trim() || 'Student';
+                    openNudgeModal({ uid, name, defaultMessage: suggestion || nudgeBtn.dataset.message });
                 });
             });
 
@@ -703,6 +1549,7 @@
             }
             
             function displayStudyPatterns(allClusters) {
+                if (!patternsContainer) return;
                 if (allClusters.length === 0) {
                     patternsContainer.innerHTML = '<p>No study patterns found. Students may need more study activity to generate patterns.</p>';
                     return;
@@ -730,6 +1577,59 @@
                 });
                 
                 patternsContainer.innerHTML = html;
+            }
+            
+            // Handle clear student analytics button
+            const clearStudentBtn = document.getElementById('clearStudentAnalyticsBtn');
+            if (clearStudentBtn) {
+                clearStudentBtn.addEventListener('click', async function() {
+                    const ok = await showConfirmModal({
+                        title: 'Clear Student AI?',
+                        message: 'This will remove existing student insights and regenerate new ones for the visible students.',
+                        confirmText: 'Clear',
+                        cancelText: 'Cancel',
+                    });
+                    if (!ok) return;
+                    
+                    try {
+                        // Disable button and show loading
+                        this.disabled = true;
+                        this.innerHTML = '<span class="material-symbols-outlined" style="font-size: 0.9rem;">hourglass_empty</span> Clearing...';
+                        
+                        // Get all at-risk students from the current page
+                        const studentElements = document.querySelectorAll('.student-risk-item');
+                        const studentUids = [];
+                        
+                        studentElements.forEach(element => {
+                            const nudgeBtn = element.querySelector('.nudge-btn');
+                            if (nudgeBtn) {
+                                studentUids.push(nudgeBtn.dataset.uid);
+                            }
+                        });
+                        
+                        // Clear analytics for each student
+                        for (const uid of studentUids) {
+                            const clearResponse = await fetch(`/api/analytics/clear/student/${uid}`, {
+                                method: 'POST'
+                            });
+                            
+                            if (!clearResponse.ok) {
+                                console.error(`Failed to clear analytics for student ${uid}`);
+                            }
+                        }
+                        
+                        showStatusModal({ title: 'Done', message: 'Student AI cleared. Reload the page to see fresh insights.' });
+                        this.disabled = false;
+                        this.innerHTML = '<span class="material-symbols-outlined" style="font-size: 0.9rem;">refresh</span> Clear Student AI';
+                        
+                    } catch (error) {
+                        console.error('Error clearing student analytics:', error);
+                        showStatusModal({ title: 'Error', message: 'Error clearing student analytics. Please try again.' });
+                        // Reset button
+                        this.disabled = false;
+                        this.innerHTML = '<span class="material-symbols-outlined" style="font-size: 0.9rem;">refresh</span> Clear Student AI';
+                    }
+                });
             }
         });
     </script>

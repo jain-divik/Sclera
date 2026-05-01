@@ -17,6 +17,10 @@
             <span class="material-symbols-outlined">class</span>
             <span class="notch-label">My Classes</span>
         </a>
+        <a href="{{ url_for('institution_teacher_syllabus') }}" class="notch-item {% if p.startswith('/institution/teacher/syllabus') %}active{% endif %}">
+            <span class="material-symbols-outlined">menu_book</span>
+            <span class="notch-label">Syllabus</span>
+        </a>
         <a href="{{ url_for('institution_teacher_settings') }}" class="notch-item {% if p.startswith('/institution/teacher/settings') %}active{% endif %}">
             <span class="material-symbols-outlined">settings</span>
             <span class="notch-label">Settings</span>

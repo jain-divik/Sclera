@@ -37,6 +37,8 @@ import traceback
 from test_system import test_system   # noqa (remove if already imported at top)
 # Gemini Analytics import
 from gemini_analytics import gemini_analytics
+# AI Assistant import
+from ai_assistant import get_ai_assistant
 # CLI Commands import
 from gemini_cli import register_cli_commands
 # Chat security utilities
@@ -164,7 +166,7 @@ def _get_institution_analytics(institution_id, class_ids=None):
     for _, c_data in classes_map.items():
         all_student_ids.update(c_data.get('student_uids', []))
     
-    # 2. Aggregations (Heatmap)
+    # 2. Aggregations (Heatmap) - 3-hour periods
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
     for sid in all_student_ids:
         sessions = db.collection('users').document(sid).collection('study_sessions').where('start_time', '>=', thirty_days_ago.isoformat()).stream()
@@ -173,7 +175,19 @@ def _get_institution_analytics(institution_id, class_ids=None):
             h = s_data.get('local_hour')
             w = s_data.get('local_weekday')
             if h is not None and w is not None:
-                heatmap_data[f"{w}-{h}"] += 1
+                # Convert hour to 3-hour period
+                if 6 <= h < 9:  # Morning (6-9)
+                    period = 6
+                elif 12 <= h < 15:  # Afternoon (12-15)
+                    period = 12
+                elif 18 <= h < 21:  # Evening (18-21)
+                    period = 18
+                elif 22 <= h < 24 or 0 <= h < 1:  # Night (22-24, 0-1)
+                    period = 22
+                else:
+                    continue  # Skip hours outside our periods
+                
+                heatmap_data[f"{w}-{period}"] += 1
     
     # 3. Enhanced Risk Analytics with Gemini predictions
     for sid in all_student_ids:
@@ -1036,6 +1050,98 @@ def student_join_class():
             logger.error("student_join_class_error", error=str(e), invite_code=invite_code)
             flash('An error occurred while joining the class', 'error')
     return render_template('student_join_class.html')
+
+@app.route('/institution/teacher/syllabus')
+@require_teacher_v2
+def institution_teacher_syllabus():
+    """Syllabus overview page for teachers – select a class and view/manage syllabi"""
+    uid = session['uid']
+    profile = _get_teacher_profile(uid) or {}
+    institution_id = profile.get('institution_id')
+
+    # Fetch all classes owned by this teacher
+    classes = []
+    for c in db.collection(CLASSES_COL).where('teacher_id', '==', uid).stream():
+        cd = c.to_dict()
+        cd['id'] = c.id
+        classes.append(cd)
+
+    # Determine which class is selected (query parameter or first available)
+    class_id = request.args.get('class_id')
+    selected_class = None
+    if class_id:
+        selected_class = next((c for c in classes if c['id'] == class_id), None)
+
+    if not selected_class and classes:
+        selected_class = classes[0]
+        class_id = selected_class['id']
+
+    stats = {}
+    if selected_class:
+        # Board syllabus stats
+        original_purpose = selected_class.get('original_purpose', 'school')
+        board = selected_class.get('board', 'CBSE')
+        grade = selected_class.get('grade', '10')
+        sc = selected_class.get('subject_combination')
+        purpose = selected_class.get('purpose', board)   # exam type or board
+
+        if original_purpose == 'school':
+            syllabus = get_syllabus('school', board, grade, subject_combination=sc)
+        elif original_purpose == 'exam':
+            syllabus = get_syllabus('exam', purpose)
+        else:
+            syllabus = {}
+
+        stats['total_subjects'] = len(syllabus)
+        stats['total_chapters'] = sum(len(v.get('chapters', {})) for v in syllabus.values())
+
+        # Custom syllabus stats
+        custom_ids = selected_class.get('custom_syllabus_ids', [])
+        stats['total_custom'] = len(custom_ids)
+
+    return render_template(
+        'institution_teacher_syllabus.html',
+        profile=profile,
+        classes=classes,
+        selected_class=selected_class,
+        class_id=class_id,
+        stats=stats
+    )
+
+@app.route('/institution/class/<class_id>/syllabus/exclusion', methods=['POST'])
+@require_institution_role(['teacher', 'admin'])
+def toggle_class_syllabus_exclusion_ajax(class_id):
+    """AJAX endpoint to toggle a syllabus exclusion without page reload"""
+    uid = session['uid']
+    profile = _get_any_profile(uid)
+    inst_id = profile.get('institution_id')
+
+    # Verify class
+    class_doc = db.collection(CLASSES_COL).document(class_id).get()
+    if not class_doc.exists or class_doc.to_dict().get('institution_id') != inst_id:
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+
+    data = request.get_json(silent=True) or {}
+    subject = data.get('subject', '').strip()
+    chapter = data.get('chapter', '').strip()
+    action = data.get('action', '')  # 'exclude' or 'include'
+
+    if not subject or not chapter or action not in ('exclude', 'include'):
+        return jsonify({'success': False, 'error': 'Invalid parameters'}), 400
+
+    exclusion_key = f"{subject}::{chapter}"
+    exclusions_ref = db.collection('classes').document(class_id).collection('excluded_chapters').document('current')
+    exclusions_doc = exclusions_ref.get()
+    exclusions = exclusions_doc.to_dict().get('chapters', {}) if exclusions_doc.exists else {}
+
+    if action == 'exclude':
+        exclusions[exclusion_key] = True
+    else:
+        exclusions.pop(exclusion_key, None)
+
+    exclusions_ref.set({'chapters': exclusions})
+    return jsonify({'success': True, 'action': action, 'key': exclusion_key})
+
 @app.route('/institution/teacher/classes/create', methods=['GET', 'POST'])
 @require_teacher_v2
 def institution_teacher_create_class():
@@ -1562,12 +1668,26 @@ def institution_teacher_dashboard():
     # Analytics (Heatmap + Predictive Risk) for the teacher's classes
     class_ids = [c['id'] for c in classes]
     analytics = _get_institution_analytics(institution_id, class_ids=class_ids)
+    
+    # Calculate days active for this teacher
+    days_active = 0
+    if profile.get('last_login_at'):
+        try:
+            from datetime import datetime
+            last_login = datetime.fromisoformat(profile['last_login_at'].replace('Z', '+00:00'))
+            days_active = (datetime.utcnow() - last_login.replace(tzinfo=None)).days
+            if days_active < 1:
+                days_active = 1  # Show at least 1 day if they logged in today
+        except Exception:
+            days_active = 1  # Fallback to 1 if calculation fails
+    
     return render_template('institution_teacher_dashboard.html', 
                            profile=profile, 
                            classes=classes, 
                            institution_id=institution_id,
                            heatmap_data=analytics['heatmap'],
-                           at_risk_students=analytics['at_risk'])
+                           at_risk_students=analytics['at_risk'],
+                           days_active=days_active)
 @app.route('/institution/teacher/class/<class_id>/upload', methods=['GET', 'POST'])
 @require_teacher_v2
 def institution_teacher_upload_file(class_id):
@@ -1614,7 +1734,13 @@ def institution_teacher_upload_file(class_id):
             return redirect(request.url)
     # GET: render upload form
     class_data = class_doc.to_dict()
-    return render_template('institution_teacher_upload.html', class_id=class_id, class_name=class_data.get('name'), profile=profile)
+    # Fetch recent uploads for this class from class_files collection (no sorting to avoid index)
+    recent_files = []
+    class_files_query = db.collection('class_files').where('class_id', '==', class_id).limit(10).stream()
+    recent_files = [doc.to_dict() for doc in class_files_query]
+    # Simple client-side sort by upload_date
+    recent_files.sort(key=lambda f: f.get('upload_date', ''), reverse=True)
+    return render_template('institution_teacher_upload.html', class_id=class_id, class_name=class_data.get('name'), profile=profile, recent_files=recent_files)
 @app.route('/uploads/<filename>')
 def serve_upload(filename):
     """Serve uploaded files from local storage"""
@@ -2667,6 +2793,122 @@ def cluster_class_study_patterns(class_id):
         logger.error(f"Error clustering class {class_id}: {str(e)}")
         return jsonify({'error': 'Clustering failed'}), 500
 
+@app.route('/api/analytics/clear/student/<student_uid>', methods=['POST'])
+@require_institution_role(['teacher', 'admin'])
+def clear_student_analytics(student_uid):
+    """Clear AI analysis results and cache for a student"""
+    uid = session['uid']
+    account_type = _get_account_type()
+    
+    try:
+        # Verify access rights
+        if account_type == 'teacher':
+            teacher_profile = _get_teacher_profile(uid) or {}
+            institution_id = teacher_profile.get('institution_id')
+            
+            # Get classes owned by this teacher
+            teacher_classes_ref = db.collection('classes').where('teacher_id', '==', uid).stream()
+            teacher_class_ids = [class_doc.id for class_doc in teacher_classes_ref]
+            
+            if not teacher_class_ids:
+                return jsonify({'error': 'No classes found'}), 403
+            
+            # Check if student is in teacher's class
+            student_doc = db.collection('users').document(student_uid).get()
+            if not student_doc.exists:
+                return jsonify({'error': 'Student not found'}), 404
+            
+            student_data = student_doc.to_dict()
+            if student_data.get('institution_id') != institution_id:
+                return jsonify({'error': 'Access denied'}), 403
+            
+            # Check class membership
+            student_class_ids = student_data.get('class_ids', [])
+            if not any(class_id in student_class_ids for class_id in teacher_class_ids):
+                return jsonify({'error': 'Student not in your classes'}), 403
+                
+        elif account_type == 'admin':
+            admin_profile = _get_admin_profile(uid) or {}
+            institution_id = admin_profile.get('institution_id')
+            
+            student_doc = db.collection('users').document(student_uid).get()
+            if not student_doc.exists:
+                return jsonify({'error': 'Student not found'}), 404
+            
+            student_data = student_doc.to_dict()
+            if student_data.get('institution_id') != institution_id:
+                return jsonify({'error': 'Access denied'}), 403
+        else:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Clear AI cache for this student
+        from utils.cache import clear_ai_cache_for_student
+        clear_ai_cache_for_student(student_uid)
+        
+        # Clear stored predictions from student document
+        student_updates = {
+            'ai_predictions': firestore.DELETE_FIELD,
+            'risk_prediction': firestore.DELETE_FIELD,
+            'readiness_prediction': firestore.DELETE_FIELD,
+            'risk_analysis': firestore.DELETE_FIELD,
+            'readiness_analysis': firestore.DELETE_FIELD,
+            'last_analyzed': firestore.DELETE_FIELD
+        }
+        
+        db.collection('users').document(student_uid).update(student_updates)
+        
+        logger.info(f"{account_type} {uid} cleared AI analytics for student {student_uid}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Student AI analysis results cleared successfully',
+            'cleared_at': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error clearing student analytics for {student_uid}: {str(e)}")
+        return jsonify({'error': 'Failed to clear student analytics'}), 500
+
+@app.route('/api/analytics/clear/class/<class_id>', methods=['POST'])
+@require_teacher_v2
+def clear_class_analytics(class_id):
+    """Clear AI analysis results and cache for a class"""
+    uid = session['uid']
+    teacher_profile = _get_teacher_profile(uid) or {}
+    institution_id = teacher_profile.get('institution_id')
+    
+    try:
+        # Verify teacher has access to this class
+        class_doc = db.collection('classes').document(class_id).get()
+        if not class_doc.exists:
+            return jsonify({'error': 'Class not found'}), 404
+        
+        class_data = class_doc.to_dict()
+        if class_data.get('institution_id') != institution_id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Clear AI cache for this class
+        from utils.cache import clear_ai_cache_for_class
+        clear_ai_cache_for_class(class_id)
+        
+        # Clear stored clusters from class document
+        db.collection('classes').document(class_id).update({
+            'study_clusters': firestore.DELETE_FIELD,
+            'last_clustered': firestore.DELETE_FIELD
+        })
+        
+        logger.info(f"Teacher {uid} cleared AI analytics for class {class_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'AI analysis results cleared successfully',
+            'cleared_at': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error clearing analytics for class {class_id}: {str(e)}")
+        return jsonify({'error': 'Failed to clear analytics'}), 500
+
 @app.route('/api/analytics/cluster/institution/<institution_id>', methods=['POST'])
 @require_admin_v2
 def cluster_institution_study_patterns(institution_id):
@@ -3072,15 +3314,25 @@ def test_dashboard():
     
     # If user doesn't have valid board/grade data, show empty dashboard
     if not board or not grade:
+        # Determine institution and class status for topnav
+        in_institution = bool(user_data.get('institution_id')) if user_data else False
+        has_class = bool(user_data.get('class_ids')) if user_data else False
+        
         return render_template("test_dashboard.html", 
                              subjects_data=[], 
                              recent_attempts=[], 
                              user_data=user_data,
                              board=None, 
-                             grade=None)
+                             grade=None,
+                             in_institution=in_institution,
+                             has_class=has_class)
     
     subjects_data   = _build_subjects_data(uid, board, grade)
     recent_attempts = test_system.get_recent_attempts(uid, limit=6)
+    
+    # Determine institution and class status for topnav
+    in_institution = bool(user_data.get('institution_id')) if user_data else False
+    has_class = bool(user_data.get('class_ids')) if user_data else False
     
     # Add cache-busting headers
     response = make_response(render_template(
@@ -3089,6 +3341,8 @@ def test_dashboard():
         recent_attempts=recent_attempts,
         user_data=user_data,
         board=board, grade=grade,
+        in_institution=in_institution,
+        has_class=has_class,
     ))
     # Force no-caching for development
     if app.debug:

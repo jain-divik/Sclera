@@ -3,98 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <script>(function(){var t=localStorage.getItem('sclera-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
-    <title>Edit Syllabus - {{ syllabus_data.get('name', 'Untitled') }}</title>
+    <title>Edit Syllabus – {{ syllabus_data.get('name', 'Untitled') }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
-        .page-wrap { max-width: 900px; margin: 0 auto; padding: 2rem; }
+        .page-wrap {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        @media (max-width: 768px) {
+            .page-wrap {
+                padding: 1rem;
+            }
+        }
 
         .breadcrumb {
-            display: flex; align-items: center; gap: .4rem;
-            font-size: .8rem; color: var(--text-muted); margin-bottom: 1.25rem;
+            display: flex; align-items: center; gap: 0.4rem;
+            font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.25rem;
         }
         .breadcrumb a { color: var(--accent); text-decoration: none; }
         .breadcrumb a:hover { text-decoration: underline; }
 
-        .page-header {
-            background: var(--bg-secondary); border: 1px solid var(--border);
-            border-radius: 1.5rem; padding: 1.75rem 2rem;
-            margin-bottom: 1.75rem;
-        }
-        .page-header h1 { font-size: 1.85rem; font-weight: 800; color: var(--text-primary); margin: 0 0 .35rem; }
-        .page-header p  { color: var(--text-muted); margin: 0; font-size: .92rem; }
-
         .island {
-            background: var(--bg-secondary); border: 1px solid var(--border);
-            border-radius: 1.5rem; padding: 2rem; margin-bottom: 1.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 1.75rem;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+        }
+
+        .island-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;
         }
         .island-title {
-            font-size: 1.3rem; font-weight: 700; color: var(--text-primary);
-            margin-bottom: 1.5rem; display: flex; align-items: center; gap: .5rem;
+            font-size: 1.3rem; font-weight: 700; margin: 0;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .island-title .material-symbols-outlined {
+            color: var(--accent); font-size: 1.5rem;
         }
 
         .form-group { margin-bottom: 1.5rem; }
         .form-group label {
-            display: block; font-weight: 600; color: var(--text-primary);
-            margin-bottom: .5rem; font-size: .9rem;
+            display: block; font-weight: 600; color: var(--text-muted);
+            font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
         }
         .form-control {
             width: 100%; background: var(--bg-tertiary); border: 1px solid var(--border);
-            border-radius: .75rem; padding: .75rem 1rem; color: var(--text-primary);
-            font-size: .9rem; font-family: inherit; transition: border-color .2s;
+            border-radius: 0.65rem; padding: 0.65rem 0.9rem; color: var(--text-primary);
+            font-size: 0.9rem; font-family: inherit; box-sizing: border-box;
+            transition: border-color 0.2s;
         }
         .form-control:focus { outline: none; border-color: var(--accent); }
+        textarea.form-control { resize: vertical; min-height: 90px; }
 
-        .btn {
-            display: inline-flex; align-items: center; gap: .5rem;
-            padding: .6rem 1.2rem; border-radius: .75rem; font-weight: 600;
-            text-decoration: none; cursor: pointer; border: none; transition: all .2s;
-            font-size: .9rem;
-        }
-        .btn .material-symbols-outlined { font-size: 1rem; }
-        .btn-primary  { background: var(--accent); color: #fff; }
-        .btn-primary:hover  { opacity: .85; }
-        .btn-secondary {
-            background: var(--bg-tertiary); color: var(--text-primary);
-            border: 1px solid var(--border);
-        }
-        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-        .btn-danger { background: rgba(239,68,68,.12); color: #ef4444;
-                      border: 1px solid rgba(239,68,68,.25); }
-        .btn-danger:hover { background: rgba(239,68,68,.22); }
-        .btn-sm { padding: .3rem .7rem; font-size: .78rem; }
-
-        /* Reuse rich topic styles from main template */
-        .chapter-list { display: flex; flex-direction: column; gap: .75rem; }
+        .chapter-list { display: flex; flex-direction: column; gap: 0.75rem; }
         .chapter-item {
             background: var(--bg-tertiary); border: 1px solid var(--border);
             border-radius: 1rem; padding: 1rem 1.15rem;
         }
         .chapter-item-header {
-            display: flex; align-items: center; gap: .5rem; margin-bottom: .65rem;
+            display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.65rem;
         }
         .chapter-number {
-            background: var(--accent); color: #fff;
-            border-radius: 50%; width: 24px; height: 24px; min-width: 24px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: .75rem; font-weight: 600;
+            background: var(--accent); color: #fff; border-radius: 50%;
+            width: 26px; height: 26px; min-width: 26px; display: flex; align-items: center;
+            justify-content: center; font-size: 0.75rem; font-weight: 800;
         }
         .chapter-name-input {
             flex: 1; background: var(--bg-secondary); border: 1px solid var(--border);
-            border-radius: .5rem; padding: .4rem .6rem; color: var(--text-primary);
-            font-size: .85rem; font-family: inherit;
+            border-radius: 0.5rem; padding: 0.4rem 0.7rem; color: var(--text-primary);
+            font-size: 0.88rem; font-family: inherit;
         }
         .chapter-name-input:focus { outline: none; border-color: var(--accent); }
 
+        .topics-list { margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
         .topic-card {
             background: var(--bg-secondary); border: 1px solid var(--border);
-            border-radius: .75rem; padding: .75rem; margin-bottom: .5rem;
+            border-radius: 0.75rem; padding: 0.75rem; position: relative;
         }
         .topic-header {
             display: flex; align-items: center; justify-content: space-between;
-            cursor: pointer; padding: .25rem; border-radius: .5rem;
-            transition: background .2s;
+            cursor: pointer; padding: 0.25rem; border-radius: 0.5rem;
+            transition: background 0.2s;
         }
         .topic-header:hover { background: var(--bg-tertiary); }
         .topic-name { font-weight: 600; color: var(--text-primary); }
@@ -105,40 +101,47 @@
         .detail-section { margin-bottom: 1rem; }
         .detail-section label {
             display: block; font-weight: 600; color: var(--text-primary);
-            margin-bottom: .5rem; font-size: .85rem;
+            margin-bottom: 0.4rem; font-size: 0.85rem;
         }
-        .detail-section textarea {
-            width: 100%; min-height: 60px; resize: vertical;
-        }
-        .array-items {
-            display: flex; flex-direction: column; gap: .35rem;
-            margin-bottom: .5rem;
-        }
+        .array-items { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.5rem; }
         .array-item {
             display: flex; align-items: center; justify-content: space-between;
-            background: var(--bg-tertiary); padding: .35rem .5rem;
-            border-radius: .5rem; font-size: .8rem;
+            background: var(--bg-tertiary); padding: 0.35rem 0.5rem; border-radius: 0.5rem;
+            font-size: 0.8rem;
         }
-        .add-array-item {
-            display: flex; gap: .35rem;
-        }
+        .add-array-item { display: flex; gap: 0.35rem; }
         .add-array-item input {
             flex: 1; background: var(--bg-secondary); border: 1px solid var(--border);
-            border-radius: .5rem; padding: .25rem .5rem; font-size: .8rem;
+            border-radius: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.8rem;
+            color: var(--text-primary);
         }
-        .btn-xs {
-            padding: .15rem .35rem; font-size: .75rem;
-            border-radius: .25rem;
-        }
-        .topics-list { margin-bottom: .75rem; }
-        .add-topic-row { display: flex; gap: .4rem; }
+        .add-topic-row { display: flex; gap: 0.5rem; }
         .add-topic-input {
-            flex: 1; background: var(--bg-secondary);
-            border: 1px solid var(--border); border-radius: .5rem;
-            color: var(--text-primary); padding: .35rem .7rem;
-            font-size: .82rem; font-family: inherit;
+            flex: 1; background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 0.5rem; padding: 0.4rem 0.7rem; color: var(--text-primary);
+            font-size: 0.85rem; font-family: inherit;
         }
         .add-topic-input:focus { outline: none; border-color: var(--accent); }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+            padding: 0.55rem 1.1rem; border-radius: 0.7rem; font-size: 0.85rem;
+            font-weight: 700; cursor: pointer; text-decoration: none; transition: all 0.2s;
+            border: none; font-family: inherit;
+        }
+        .btn .material-symbols-outlined { font-size: 1rem; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-secondary {
+            background: var(--bg-tertiary); color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-danger { background: rgba(239,68,68,.12); color: #ef4444; border: 1px solid rgba(239,68,68,.25); }
+        .btn-danger:hover { background: rgba(239,68,68,.22); }
+        .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.78rem; }
+
+        .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); opacity: 0.7; }
     </style>
 </head>
 <body>
@@ -157,24 +160,28 @@
                     <span class="material-symbols-outlined" style="font-size:1rem">home</span>
                     <a href="{{ url_for('institution_teacher_dashboard') }}">Dashboard</a>
                     <span>›</span>
-                    <a href="{{ url_for('institution_teacher_classes') }}">Classes</a>
+                    <a href="{{ url_for('institution_teacher_syllabus') }}?class_id={{ class_id }}">Syllabus</a>
                     <span>›</span>
-                    <a href="{{ url_for('manage_class_syllabus', class_id=class_id) }}">Syllabus</a>
+                    <a href="{{ url_for('custom_syllabus_upload', class_id=class_id) }}">Custom</a>
                     <span>›</span>
                     <span>Edit Syllabus</span>
                 </div>
 
                 <!-- Page Header -->
-                <div class="page-header">
-                    <h1>
-                        <span class="material-symbols-outlined" style="vertical-align:middle;font-size:2rem;color:var(--accent)">edit</span>
-                        Edit Syllabus
-                    </h1>
-                    <p>Modify the custom syllabus for <strong>{{ class_data.get('name', 'this class') }}</strong></p>
+                <div class="island" style="margin-bottom:1.5rem;">
+                    <div class="island-header">
+                        <h1 class="island-title">
+                            <span class="material-symbols-outlined">edit</span>
+                            Edit Syllabus
+                        </h1>
+                        <p style="color:var(--text-muted); margin:0; font-size:0.9rem;">
+                            Modify the custom syllabus for <strong>{{ class_data.get('name', 'this class') }}</strong>
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Edit Form -->
-                <div class="island" data-chapters-data="{{ syllabus_data.get('chapters', [])|tojson|replace('"', '&quot;') }}">
+                <div class="island">
                     <form method="POST" onsubmit="serializeChapters(event)">
                         <input type="hidden" name="chapters_json" id="chapters_json_input">
 
@@ -187,14 +194,14 @@
                         <div class="form-group">
                             <label>Chapters &amp; Topics</label>
                             <div class="chapter-list" id="chapterList"></div>
-                            <button type="button" class="btn btn-secondary" style="margin-top:.75rem" onclick="addChapter()">
+                            <button type="button" class="btn btn-secondary btn-sm" style="margin-top:0.75rem" onclick="addChapter()">
                                 <span class="material-symbols-outlined">add</span>
                                 Add Chapter
                             </button>
                         </div>
 
-                        <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-                            <a href="{{ url_for('manage_class_syllabus', class_id=class_id) }}" class="btn btn-secondary">
+                        <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1.5rem;">
+                            <a href="{{ url_for('custom_syllabus_upload', class_id=class_id) }}" class="btn btn-secondary">
                                 Cancel
                             </a>
                             <button type="submit" class="btn btn-primary">
@@ -210,13 +217,11 @@
     </div>
 
     <script>
-    // Initialize with existing data from data attribute
-    const islandElement = document.querySelector('.island');
-    const chaptersDataJson = islandElement.getAttribute('data-chapters-data');
-    let chaptersData = JSON.parse(chaptersDataJson);
+    // ── Data injection safely through <script> tag ──────────────────────
+    const rawSyllabus = {{ syllabus_data.get('chapters', [])|tojson|safe }};
 
-    // Convert simple string topics to rich format if needed
-    chaptersData = chaptersData.map(ch => ({
+    // Convert old format (string topics) to rich format if needed
+    let chaptersData = rawSyllabus.map(ch => ({
         name: ch.chapter || '',
         topics: (ch.topics || []).map(topic => {
             if (typeof topic === 'string') {
@@ -233,18 +238,33 @@
         })
     }));
 
-    // Include the same rich content functions from the main template
+    // Track which topic panels were expanded
+    const openTopics = new Set();
+
+    // ── Helper functions ─────────────────────────────────────────────────
+    function escHtml(str) {
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Manual builder functions (same as custom_syllabus.html) ─────────
+    function toggleTopicDetails(chIdx, tIdx) {
+        const key = `${chIdx}-${tIdx}`;
+        if (openTopics.has(key)) openTopics.delete(key);
+        else openTopics.add(key);
+        renderChapters();
+    }
+
     function addChapter() {
-        const idx = chaptersData.length;
-        chaptersData.push({ 
-            name: '', 
+        chaptersData.push({
+            name: '',
             topics: []
         });
         renderChapters();
-        setTimeout(() => {
-            const inputs = document.querySelectorAll('.chapter-name-input');
-            inputs[inputs.length - 1]?.focus();
-        }, 50);
+        const inputs = document.querySelectorAll('.chapter-name-input');
+        inputs[inputs.length-1]?.focus();
     }
 
     function removeChapter(idx) {
@@ -257,23 +277,20 @@
     }
 
     function addTopic(idx) {
-        const input = document.getElementById('topic-input-' + idx);
+        const input = document.getElementById(`topic-input-${idx}`);
         const val = input.value.trim();
         if (!val) return;
-        
-        const richTopic = {
+        chaptersData[idx].topics.push({
             name: val,
             overview: '',
             explanations: [],
             key_points: [],
             images: [],
             resources: { videos: [], pdfs: [], practice: [] }
-        };
-        
-        chaptersData[idx].topics.push(richTopic);
+        });
         input.value = '';
         renderChapters();
-        setTimeout(() => document.getElementById('topic-input-' + idx)?.focus(), 50);
+        document.getElementById(`topic-input-${idx}`)?.focus();
     }
 
     function removeTopic(chIdx, tIdx) {
@@ -281,18 +298,40 @@
         renderChapters();
     }
 
-    function toggleTopicDetails(chIdx, tIdx) {
-        const details = document.getElementById(`topic-details-${chIdx}-${tIdx}`);
-        const chevron = document.getElementById(`topic-chevron-${chIdx}-${tIdx}`);
-        
-        if (details.style.display === 'none' || !details.style.display) {
-            details.style.display = 'block';
-            chevron.textContent = 'expand_less';
+    // Direct field update functions (attached to window for inline event handlers)
+    window.updateTopicField = function(chIdx, tIdx, field, value) {
+        const topic = chaptersData[chIdx].topics[tIdx];
+        if (field.includes('.')) {
+            const [parent, child] = field.split('.');
+            topic[parent][child] = value;
         } else {
-            details.style.display = 'none';
-            chevron.textContent = 'expand_more';
+            topic[field] = value;
         }
-    }
+    };
+
+    window.addArrayItem = function(chIdx, tIdx, field) {
+        const input = document.getElementById(`${field}-input-${chIdx}-${tIdx}`);
+        const val = input.value.trim();
+        if (!val) return;
+        if (field.includes('.')) {
+            const [parent, child] = field.split('.');
+            chaptersData[chIdx].topics[tIdx][parent][child].push(val);
+        } else {
+            chaptersData[chIdx].topics[tIdx][field].push(val);
+        }
+        input.value = '';
+        renderChapters();
+    };
+
+    window.removeArrayItem = function(chIdx, tIdx, field, itemIdx) {
+        if (field.includes('.')) {
+            const [parent, child] = field.split('.');
+            chaptersData[chIdx].topics[tIdx][parent][child].splice(itemIdx, 1);
+        } else {
+            chaptersData[chIdx].topics[tIdx][field].splice(itemIdx, 1);
+        }
+        renderChapters();
+    };
 
     function renderChapters() {
         const list = document.getElementById('chapterList');
@@ -302,57 +341,149 @@
             div.className = 'chapter-item';
             div.innerHTML = `
                 <div class="chapter-item-header">
-                    <div class="chapter-number">${idx + 1}</div>
+                    <div class="chapter-number">${idx+1}</div>
                     <input class="chapter-name-input" type="text"
-                           placeholder="Chapter name…"
-                           value="${escHtml(ch.name)}"
-                           oninput="updateChapterName(${idx}, this.value)"
-                    >
-                    <button type="button" class="btn btn-danger btn-sm" onclick="removeChapter(${idx})"
-                            title="Remove chapter">
-                        <span class="material-symbols-outlined" style="font-size:.85rem">close</span>
+                           placeholder="Chapter name…" value="${escHtml(ch.name)}"
+                           oninput="updateChapterName(${idx}, this.value)">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeChapter(${idx})" title="Remove chapter">
+                        <span class="material-symbols-outlined" style="font-size:0.85rem">close</span>
                     </button>
                 </div>
-                <div class="topics-list" id="topics-${idx}">
-                    ${ch.topics.map((t, ti) => `
+                <div class="topics-list">
+                    ${ch.topics.map((t, ti) => {
+                        const key = `${idx}-${ti}`;
+                        const isOpen = openTopics.has(key);
+                        return `
                         <div class="topic-card">
                             <div class="topic-header" onclick="toggleTopicDetails(${idx}, ${ti})">
                                 <span class="topic-name">${escHtml(t.name || 'Untitled Topic')}</span>
-                                <span class="material-symbols-outlined" id="topic-chevron-${idx}-${ti}">expand_more</span>
+                                <span class="material-symbols-outlined">${isOpen ? 'expand_less' : 'expand_more'}</span>
                             </div>
-                            <div class="topic-details" id="topic-details-${idx}-${ti}" style="display:none">
+                            <div class="topic-details" style="display:${isOpen ? 'block' : 'none'}">
                                 <div class="detail-section">
                                     <label>Overview</label>
                                     <textarea class="form-control" placeholder="Brief overview..."
                                               oninput="window.updateTopicField(${idx}, ${ti}, 'overview', this.value)">${escHtml(t.overview || '')}</textarea>
                                 </div>
+                                <div class="detail-section">
+                                    <label>Explanations</label>
+                                    <div class="array-items">
+                                        ${(t.explanations || []).map((exp, ei) => `
+                                            <div class="array-item">
+                                                <span>${escHtml(exp)}</span>
+                                                <button type="button" class="btn btn-xs btn-danger" onclick="window.removeArrayItem(${idx}, ${ti}, 'explanations', ${ei})">✕</button>
+                                            </div>`).join('')}
+                                    </div>
+                                    <div class="add-array-item">
+                                        <input type="text" id="explanations-input-${idx}-${ti}" placeholder="Add explanation...">
+                                        <button type="button" class="btn btn-xs btn-secondary" onclick="window.addArrayItem(${idx}, ${ti}, 'explanations')">+</button>
+                                    </div>
+                                </div>
+                                <div class="detail-section">
+                                    <label>Key Points</label>
+                                    <div class="array-items">
+                                        ${(t.key_points || []).map((kp, kpi) => `
+                                            <div class="array-item">
+                                                <span>${escHtml(kp)}</span>
+                                                <button type="button" class="btn btn-xs btn-danger" onclick="window.removeArrayItem(${idx}, ${ti}, 'key_points', ${kpi})">✕</button>
+                                            </div>`).join('')}
+                                    </div>
+                                    <div class="add-array-item">
+                                        <input type="text" id="key_points-input-${idx}-${ti}" placeholder="Add key point...">
+                                        <button type="button" class="btn btn-xs btn-secondary" onclick="window.addArrayItem(${idx}, ${ti}, 'key_points')">+</button>
+                                    </div>
+                                </div>
+                                <div class="detail-section">
+                                    <label>Images</label>
+                                    <div class="array-items">
+                                        ${(t.images || []).map((img, ii) => `
+                                            <div class="array-item">
+                                                <span><strong>${escHtml(img.caption)}</strong>: ${escHtml(img.url)}</span>
+                                                <button type="button" class="btn btn-xs btn-danger" onclick="window.removeArrayItem(${idx}, ${ti}, 'images', ${ii})">✕</button>
+                                            </div>`).join('')}
+                                    </div>
+                                    <div class="add-array-item" style="flex-direction:column; gap:0.25rem;">
+                                        <input type="text" id="images-url-${idx}-${ti}" placeholder="Image URL..." style="width:100%;">
+                                        <input type="text" id="images-caption-${idx}-${ti}" placeholder="Caption..." style="width:100%;">
+                                        <button type="button" class="btn btn-xs btn-secondary" onclick="addImage(${idx}, ${ti})">+ Add Image</button>
+                                    </div>
+                                </div>
+                                <div class="detail-section">
+                                    <label>Resources</label>
+                                    <!-- Videos -->
+                                    <div style="margin-bottom:0.5rem;">
+                                        <strong style="font-size:0.8rem;">Videos:</strong>
+                                        <div class="array-items">
+                                            ${(t.resources?.videos || []).map((vid, vi) => `
+                                                <div class="array-item">
+                                                    <span>${escHtml(typeof vid === 'string' ? vid : vid.title)}</span>
+                                                    <button type="button" class="btn btn-xs btn-danger" onclick="window.removeArrayItem(${idx}, ${ti}, 'resources.videos', ${vi})">✕</button>
+                                                </div>`).join('')}
+                                        </div>
+                                        <div class="add-array-item">
+                                            <input type="text" id="resources.videos-input-${idx}-${ti}" placeholder="Video URL or title...">
+                                            <button type="button" class="btn btn-xs btn-secondary" onclick="window.addArrayItem(${idx}, ${ti}, 'resources.videos')">+</button>
+                                        </div>
+                                    </div>
+                                    <!-- PDFs -->
+                                    <div style="margin-bottom:0.5rem;">
+                                        <strong style="font-size:0.8rem;">PDFs:</strong>
+                                        <div class="array-items">
+                                            ${(t.resources?.pdfs || []).map((pdf, pi) => `
+                                                <div class="array-item">
+                                                    <span>${escHtml(typeof pdf === 'string' ? pdf : pdf.title)}</span>
+                                                    <button type="button" class="btn btn-xs btn-danger" onclick="window.removeArrayItem(${idx}, ${ti}, 'resources.pdfs', ${pi})">✕</button>
+                                                </div>`).join('')}
+                                        </div>
+                                        <div class="add-array-item">
+                                            <input type="text" id="resources.pdfs-input-${idx}-${ti}" placeholder="PDF URL or title...">
+                                            <button type="button" class="btn btn-xs btn-secondary" onclick="window.addArrayItem(${idx}, ${ti}, 'resources.pdfs')">+</button>
+                                        </div>
+                                    </div>
+                                    <!-- Practice -->
+                                    <div style="margin-bottom:0.5rem;">
+                                        <strong style="font-size:0.8rem;">Practice:</strong>
+                                        <div class="array-items">
+                                            ${(t.resources?.practice || []).map((pr, pri) => `
+                                                <div class="array-item">
+                                                    <span>${escHtml(typeof pr === 'string' ? pr : pr.title)}</span>
+                                                    <button type="button" class="btn btn-xs btn-danger" onclick="window.removeArrayItem(${idx}, ${ti}, 'resources.practice', ${pri})">✕</button>
+                                                </div>`).join('')}
+                                        </div>
+                                        <div class="add-array-item">
+                                            <input type="text" id="resources.practice-input-${idx}-${ti}" placeholder="Practice resource URL...">
+                                            <button type="button" class="btn btn-xs btn-secondary" onclick="window.addArrayItem(${idx}, ${ti}, 'resources.practice')">+</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <button type="button" class="btn btn-xs btn-danger" onclick="removeTopic(${idx}, ${ti})" title="Remove topic">✕</button>
-                        </div>`).join('')}
+                            <button type="button" class="btn btn-danger btn-sm" onclick="removeTopic(${idx}, ${ti})" title="Remove topic" style="margin-top:0.5rem;">Remove topic</button>
+                        </div>`;
+                    }).join('')}
                 </div>
                 <div class="add-topic-row">
                     <input class="add-topic-input" type="text" id="topic-input-${idx}"
-                           placeholder="Add topic and press Enter or +"
-                           onkeydown="if(event.key==='Enter'){event.preventDefault();addTopic(${idx});}">
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="addTopic(${idx})">
-                        <span class="material-symbols-outlined" style="font-size:.85rem">add</span>
-                    </button>
+                           placeholder="Add a topic">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="addTopic(${idx})">+</button>
                 </div>`;
             list.appendChild(div);
         });
     }
 
-    function escHtml(str) {
-        return String(str)
-            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+    // Fallback image addition helper
+    window.addImage = function(chIdx, tIdx) {
+        const url = document.getElementById(`images-url-${chIdx}-${tIdx}`).value.trim();
+        const caption = document.getElementById(`images-caption-${chIdx}-${tIdx}`).value.trim();
+        if (!url) return;
+        chaptersData[chIdx].topics[tIdx].images.push({ url, caption });
+        renderChapters();
+    };
 
+    // Serialise for form submission
     function serializeChapters(e) {
         const payload = chaptersData
             .filter(ch => ch.name.trim())
             .map(ch => ({ chapter: ch.name.trim(), topics: ch.topics }));
-
         if (payload.length === 0) {
             e.preventDefault();
             alert('Please add at least one chapter with a name.');
@@ -361,8 +492,9 @@
         document.getElementById('chapters_json_input').value = JSON.stringify(payload);
     }
 
-    // Initialize the form
+    // Initialize
     renderChapters();
+    // Optionally auto-open first chapter's first topic
     </script>
 </body>
 </html>

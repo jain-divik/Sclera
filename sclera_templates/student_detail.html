@@ -1,12 +1,162 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-
 <head>
     <meta charset="UTF-8">
-    <title>Student Detail | StudyOS</title>
+    <title>{{ student.get('name', 'Student') }} | StudyOS</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        .page-wrap {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+        @media (max-width: 768px) {
+            .page-wrap { padding: 1rem; }
+        }
 
+        .island {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .island-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;
+        }
+        .island-title {
+            font-size: 1.15rem; font-weight: 700; margin: 0;
+            display: flex; align-items: center; gap: 0.5rem;
+            color: var(--text-primary);
+        }
+        .island-title .material-symbols-outlined { color: var(--accent); font-size: 1.3rem; }
+
+        .breadcrumb {
+            display: flex; align-items: center; gap: 0.4rem;
+            font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;
+        }
+        .breadcrumb a { color: var(--accent); text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        .student-header {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;
+        }
+        .student-name { font-size: 2rem; font-weight: 800; color: var(--text-primary); margin: 0; }
+        .student-meta { color: var(--text-muted); font-size: 0.9rem; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+        .stat-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1rem 1.25rem;
+            text-align: center;
+        }
+        .stat-number { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+        .stat-number.negative { color: #ef4444; }
+
+        .subject-progress table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .subject-progress th {
+            text-align: left; padding: 0.75rem 0.5rem; font-weight: 600; color: var(--text-muted);
+            border-bottom: 1px solid var(--border); font-size: 0.8rem; text-transform: uppercase;
+        }
+        .subject-progress td {
+            padding: 0.65rem 0.5rem; border-bottom: 1px solid var(--border);
+        }
+        .progress-bar {
+            background: var(--bg-tertiary); height: 6px; border-radius: 3px; overflow: hidden; width: 100%;
+        }
+        .progress-fill {
+            height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s;
+        }
+
+        .result-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .result-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.85rem 1rem; background: var(--bg-tertiary); border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+        .result-detail strong { display: block; font-weight: 600; color: var(--text-primary); }
+        .result-score { font-weight: 700; color: var(--accent); }
+        .result-date { font-size: 0.8rem; color: var(--text-muted); }
+
+        .session-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .session-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.75rem 1rem; background: var(--bg-tertiary); border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .action-row {
+            display: flex; flex-wrap: wrap; gap: 0.75rem;
+        }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+            padding: 0.55rem 1.2rem; border-radius: 0.7rem; font-size: 0.85rem;
+            font-weight: 700; cursor: pointer; text-decoration: none; transition: all 0.2s;
+            border: none; font-family: inherit;
+        }
+        .btn .material-symbols-outlined { font-size: 1rem; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-secondary {
+            background: var(--bg-tertiary); color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Modal */
+        .td-modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex;
+            align-items: center; justify-content: center; z-index: 10000;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        .td-modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .td-modal {
+            width: min(500px, 95%); background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 1.25rem; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .td-modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1.25rem; border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+        }
+        .td-modal-title { font-size: 1rem; font-weight: 800; margin: 0; }
+        .td-modal-close {
+            background: transparent; border: 1px solid var(--border); color: var(--text-primary);
+            width: 2rem; height: 2rem; border-radius: 0.5rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .td-modal-close:hover { background: var(--bg-tertiary); border-color: var(--accent); }
+        .td-modal-body { padding: 1.25rem; color: var(--text-primary); font-size: 0.95rem; }
+        .td-modal-footer {
+            padding: 1rem 1.25rem; border-top: 1px solid var(--border);
+            display: flex; justify-content: flex-end; gap: 0.5rem; background: var(--bg-secondary);
+        }
+        .td-modal-textarea {
+            width: 100%; min-height: 100px; resize: vertical; padding: 0.75rem;
+            background: var(--bg-tertiary); border: 1px solid var(--border);
+            border-radius: 0.5rem; color: var(--text-primary); font-family: inherit;
+        }
+        .td-modal-textarea:focus { outline: none; border-color: var(--accent); }
+    </style>
+</head>
 <body>
     <div class="dashboard-layout">
         {% if profile.get('account_type') == 'admin' %}
@@ -15,75 +165,127 @@
             {% include '_teacher_topnav.html' %}
         {% endif %}
 
-        <main class="main-content">
-            <div class="header-row">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <a href="{% if profile.get('account_type') == 'admin' %}{{ url_for('institution_admin_dashboard') }}{% else %}{{ url_for('institution_teacher_dashboard') }}{% endif %}" class="btn btn-secondary" style="font-size: 14px;">← Back</a>
-                    <h1>{{ student.get('name', 'Student') }}</h1>
+        <main class="main-content" style="margin-left:0;">
+            <div class="page-wrap">
+                <!-- Breadcrumb -->
+                <div class="breadcrumb">
+                    <span class="material-symbols-outlined" style="font-size:1rem">home</span>
+                    <a href="{% if profile.get('account_type') == 'admin' %}{{ url_for('institution_admin_dashboard') }}{% else %}{{ url_for('institution_teacher_dashboard') }}{% endif %}">Dashboard</a>
+                    <span>›</span>
+                    <a href="{{ url_for('all_students') }}">Students</a>
+                    <span>›</span>
+                    <span>{{ student.get('name', 'Student') }}</span>
                 </div>
-                <span class="student-meta">{{ student.get('email', '') }}</span>
-            </div>
 
-            <div class="inst-grid">
-                <!-- AI Analytics Card -->
+                <!-- Student header -->
+                <div class="student-header">
+                    <div>
+                        <h1 class="student-name">{{ student.get('name', 'Student') }}</h1>
+                        <p class="student-meta">{{ student.get('email', '') }}</p>
+                    </div>
+                    <div class="action-row">
+                        <button class="btn btn-primary" onclick="openNudgeModal()">
+                            <span class="material-symbols-outlined">notifications</span>
+                            Send Nudge
+                        </button>
+                        <a href="{{ url_for('generate_student_report', student_uid=student_uid) }}" class="btn btn-secondary">
+                            <span class="material-symbols-outlined">picture_as_pdf</span>
+                            PDF Report
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Stats Island -->
                 <div class="island">
-                    <h3>AI Behavioral Insights</h3>
-                    <div class="progress-summary">
-                        <div class="stat-box">
-                            <span class="stat-label">Momentum</span>
-                            <span
-                                class="stat-value {% if progress_data.get('momentum', 0) < 0 %}negative{% else %}positive{% endif %}">
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined">analytics</span>
+                            AI Insights
+                        </h3>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number {% if progress_data.get('momentum', 0) < 0 %}negative{% endif %}">
                                 {{ progress_data.get('momentum', 0) }}%
-                            </span>
+                            </div>
+                            <div class="stat-label">Momentum</div>
                         </div>
-                        <div class="stat-box">
-                            <span class="stat-label">Consistency</span>
-                            <span class="stat-value">{{ progress_data.get('consistency', 0) }}%</span>
+                        <div class="stat-card">
+                            <div class="stat-number">{{ progress_data.get('consistency', 0) }}%</div>
+                            <div class="stat-label">Consistency</div>
                         </div>
-                        <div class="stat-box">
-                            <span class="stat-label">Readiness</span>
-                            <span class="stat-value">{{ progress_data.get('readiness', 0) }}%</span>
+                        <div class="stat-card">
+                            <div class="stat-number">{{ progress_data.get('readiness', 0) }}%</div>
+                            <div class="stat-label">Readiness</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Progress Card -->
+                <!-- Academic Progress Island -->
                 <div class="island">
-                    <h3>Academic Progress</h3>
-                    <div class="progress-summary">
-                        <div class="stat-box">
-                            <span class="stat-label">Overall</span>
-                            <span class="stat-value">{{ progress_data.get('overall', 0) }}%</span>
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined">school</span>
+                            Academic Progress
+                        </h3>
+                    </div>
+                    <div class="stats-grid" style="margin-bottom:1.5rem;">
+                        <div class="stat-card">
+                            <div class="stat-number">{{ progress_data.get('overall', 0) }}%</div>
+                            <div class="stat-label">Overall</div>
                         </div>
-                        <div class="stat-box">
-                            <span class="stat-label">Completed</span>
-                            <span class="stat-value">{{ progress_data.total_completed }}/{{ progress_data.total_chapters
-                                }}</span>
+                        <div class="stat-card">
+                            <div class="stat-number">{{ progress_data.total_completed }}/{{ progress_data.total_chapters }}</div>
+                            <div class="stat-label">Chapters Completed</div>
                         </div>
                     </div>
 
-                    <h4 style="margin-top:20px;">By Subject</h4>
-                    {% for subject, pct in progress_data.by_subject.items() %}
-                    <div class="subject-progress-row">
-                        <span>{{ subject }}</span>
-                        <span>{{ pct }}%</span>
+                    {% if progress_data.by_subject %}
+                    <div class="subject-progress">
+                        <table>
+                            <thead>
+                                <tr><th>Subject</th><th>Progress</th><th style="width:40%;"></th></tr>
+                            </thead>
+                            <tbody>
+                                {% for subject, pct in progress_data.by_subject.items() %}
+                                <tr>
+                                    <td>{{ subject }}</td>
+                                    <td>{{ pct }}%</td>
+                                    <td>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: {{ pct }}%;"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted">No subject data available.</p>
+                    {% endif %}
                 </div>
 
-                <!-- Recent Results -->
+                <!-- Recent Exam Results -->
                 <div class="island">
-                    <h3>Recent Exam Results</h3>
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined">assignment</span>
+                            Recent Exam Results
+                        </h3>
+                    </div>
                     {% if recent_results %}
-                    {% for result in recent_results %}
-                    <div class="result-row">
-                        <div>
-                            <strong>{{ result.get('test_type', 'Exam') }}</strong>
-                            <span class="text-muted">{{ result.get('date', '') }}</span>
+                    <div class="result-list">
+                        {% for result in recent_results %}
+                        <div class="result-item">
+                            <div class="result-detail">
+                                <strong>{{ result.get('test_type', 'Exam') }}</strong>
+                                <span class="result-date">{{ result.get('date', '') }}</span>
+                            </div>
+                            <div class="result-score">{{ result.get('score', 0) }}/{{ result.get('max_score', 100) }}</div>
                         </div>
-                        <span class="score">{{ result.get('score', 0) }}/{{ result.get('max_score', 100) }}</span>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                     {% else %}
                     <p class="text-muted">No results recorded yet.</p>
                     {% endif %}
@@ -91,49 +293,102 @@
 
                 <!-- Study Activity -->
                 <div class="island">
-                    <h3>Study Sessions</h3>
-                    {% if sessions %}
-                    {% for session in sessions %}
-                    <div class="session-row">
-                        <span>{{ (session.get('duration_seconds', 0) // 60) }} min</span>
-                        <span class="text-muted">{{ session.get('start_time', '') }}</span>
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined">timer</span>
+                            Recent Study Sessions
+                        </h3>
                     </div>
-                    {% endfor %}
+                    {% if sessions %}
+                    <div class="session-list">
+                        {% for session in sessions[:10] %}
+                        <div class="session-item">
+                            <span>{{ (session.get('duration_seconds', 0) // 60) }} min</span>
+                            <span class="text-muted">{{ session.get('start_time', '')[:16] }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
                     {% else %}
                     <p class="text-muted">No study sessions tracked.</p>
                     {% endif %}
-                </div>
-
-                <!-- Actions -->
-                <div class="island">
-                    <h3>Actions</h3>
-                    <button class="btn-secondary" onclick="sendNudge()">Send Nudge</button>
-                    <button class="btn-secondary" onclick="viewFullProfile()">View Full Profile</button>
                 </div>
             </div>
         </main>
     </div>
 
-    <script>
-        function sendNudge() {
-            const message = prompt("Enter message:");
-            if (!message) return;
+    <!-- Nudge Modal -->
+    <div class="td-modal-overlay" id="nudgeModal">
+        <div class="td-modal">
+            <div class="td-modal-header">
+                <h3 class="td-modal-title" id="nudgeModalTitle">Send Nudge</h3>
+                <button class="td-modal-close" onclick="closeNudgeModal()">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="td-modal-body">
+                <label style="display:block; margin-bottom:0.5rem; font-weight:600;">Message to {{ student.get('name', 'Student') }}</label>
+                <textarea id="nudgeMessage" class="td-modal-textarea" placeholder="Keep up the great work! ..."></textarea>
+            </div>
+            <div class="td-modal-footer">
+                <button class="btn btn-secondary" onclick="closeNudgeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="sendNudge()">Send</button>
+            </div>
+        </div>
+    </div>
 
-            fetch('/institution/nudge', {
+    <script>
+    (function() {
+        const saved = localStorage.getItem('sclera-theme');
+        if (saved) document.documentElement.setAttribute('data-theme', saved);
+    })();
+
+    const nudgeModal = document.getElementById('nudgeModal');
+    const nudgeMessage = document.getElementById('nudgeMessage');
+
+    function openNudgeModal() {
+        nudgeMessage.value = '';
+        nudgeModal.classList.add('open');
+        nudgeModal.setAttribute('aria-hidden', 'false');
+        nudgeMessage.focus();
+    }
+
+    function closeNudgeModal() {
+        nudgeModal.classList.remove('open');
+        nudgeModal.setAttribute('aria-hidden', 'true');
+    }
+
+    nudgeModal.addEventListener('click', (e) => {
+        if (e.target === nudgeModal) closeNudgeModal();
+    });
+
+    async function sendNudge() {
+        const message = nudgeMessage.value.trim();
+        if (!message) {
+            alert('Please enter a message.');
+            return;
+        }
+        try {
+            const res = await fetch('/institution/nudge', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     student_uid: '{{ student_uid }}',
                     message: message
                 })
-            }).then(res => res.json())
-                .then(data => alert(data.message));
+            });
+            const data = await res.json();
+            if (data.success) {
+                closeNudgeModal();
+                // Show brief feedback (could be a toast)
+                alert('Nudge sent successfully!');
+            } else {
+                alert('Failed to send nudge. Please try again.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Network error. Check console.');
         }
-
-        function viewFullProfile() {
-            window.location.href = '{{ url_for("profile_resume") }}'; // Placeholder
-        }
+    }
     </script>
 </body>
-
 </html>
