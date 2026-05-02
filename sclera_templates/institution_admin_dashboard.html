@@ -1,208 +1,517 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | StudyOS</title>
-    <link rel="stylesheet" href="/styles.css">
+    <title>Admin Dashboard | Sclera</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
+        body { font-family: 'Outfit', sans-serif; }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            padding: 2rem;
+            align-items: start;
+        }
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                padding: 1.25rem;
+                gap: 1rem;
+            }
+        }
+
+        .island {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            padding: 1.75rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .island-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;
+        }
+        .island-title {
+            font-size: 1.15rem; font-weight: 700; margin: 0;
+            display: flex; align-items: center; gap: 0.5rem;
+            color: var(--text-primary);
+        }
+        .island-title .material-symbols-outlined { color: var(--accent); font-size: 1.3rem; }
+
+        /* Stats strip */
+        .stats-strip {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        @media (max-width: 480px) {
+            .stats-strip { grid-template-columns: 1fr 1fr; }
+        }
+        .stat-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1rem 1.25rem;
+            text-align: center;
+        }
+        .stat-number { font-size: 2rem; font-weight: 800; color: var(--accent); }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+        /* Heatmap (4‑period) */
         .heatmap-grid {
             display: grid;
-            gap: 2px;
+            grid-template-columns: 50px repeat(4, 1fr);
+            gap: 4px;
+            margin-top: 20px;
         }
-
         .heatmap-cell {
-            aspect-ratio: 1;
-            border-radius: 2px;
+            aspect-ratio: 1.5;
+            border-radius: 4px;
             background: var(--bg-tertiary);
-            margin: 1px;
+            border: 1px solid var(--border-subtle);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            position: relative;
+        }
+        .heatmap-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 8px rgba(52, 211, 153, 0.3);
+        }
+        .heatmap-cell.level-1 { background: rgba(52, 211, 153, 0.3); border-color: rgba(52, 211, 153, 0.5); }
+        .heatmap-cell.level-2 { background: rgba(52, 211, 153, 0.6); border-color: rgba(52, 211, 153, 0.8); }
+        .heatmap-cell.level-3 { background: rgba(52, 211, 153, 0.9); border-color: #34d399; }
+        .heatmap-label { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; font-weight: 600; }
+        .heatmap-period { font-size: 10px; text-align: center; color: var(--text-muted); font-weight: 600; }
+        .heatmap-count {
+            position: absolute; top: 2px; right: 2px;
+            font-size: 0.6rem; font-weight: 700;
+            color: rgba(255,255,255,0.9);
+            background: rgba(0,0,0,0.3);
+            padding: 1px 3px; border-radius: 2px;
         }
 
-        .heatmap-cell.level-1 {
-            background: rgba(52, 211, 153, 0.3);
+        /* Teacher list */
+        .teacher-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .teacher-card {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--bg-tertiary); border: 1px solid var(--border);
+            border-radius: 1rem; padding: 1rem 1.25rem; transition: border-color 0.2s;
+            flex-wrap: wrap; gap: 0.5rem;
         }
+        .teacher-card:hover { border-color: var(--accent); }
+        .teacher-info { min-width: 0; }
+        .teacher-name { font-weight: 600; color: var(--text-primary); }
+        .teacher-meta { font-size: 0.82rem; color: var(--text-muted); }
+        .action-btns { display: flex; gap: 0.5rem; }
 
-        .heatmap-cell.level-2 {
-            background: rgba(52, 211, 153, 0.6);
+        /* At-risk list */
+        .risk-list { max-height: 400px; overflow-y: auto; padding-right: 4px; }
+        .risk-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.85rem 1rem; background: var(--bg-tertiary);
+            border: 1px solid var(--border); border-radius: 0.75rem;
+            margin-bottom: 0.5rem;
+            transition: border-color 0.2s;
         }
+        .risk-item:hover { border-color: var(--accent); }
+        .risk-info { min-width: 0; }
+        .risk-name { font-weight: 600; color: var(--text-primary); }
+        .risk-class { font-size: 0.8rem; color: var(--text-muted); }
 
-        .heatmap-cell.level-3 {
-            background: #34d399;
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+            padding: 0.55rem 1.2rem; border-radius: 0.7rem; font-size: 0.85rem;
+            font-weight: 700; cursor: pointer; text-decoration: none; transition: all 0.2s;
+            border: none; font-family: inherit;
         }
+        .btn .material-symbols-outlined { font-size: 1rem; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-secondary {
+            background: var(--bg-tertiary); color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-danger { background: rgba(239,68,68,.12); color: #ef4444; border: 1px solid rgba(239,68,68,.25); }
+        .btn-danger:hover { background: rgba(239,68,68,.22); }
+        .btn-sm { padding: 0.3rem 0.75rem; font-size: 0.8rem; }
 
-        .heatmap-label {
-            font-size: 10px;
-            color: var(--text-muted);
-            text-align: right;
-            padding-right: 4px;
+        /* td-modal */
+        .td-modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex;
+            align-items: center; justify-content: center; z-index: 10000;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
         }
-
-        .heatmap-spacer {
-            width: 4px;
+        .td-modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .td-modal {
+            width: min(500px, 95%); background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 1.25rem; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
         }
+        .td-modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1.25rem; border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+        }
+        .td-modal-title { font-size: 1rem; font-weight: 800; margin: 0; }
+        .td-modal-close {
+            background: transparent; border: 1px solid var(--border); color: var(--text-primary);
+            width: 2rem; height: 2rem; border-radius: 0.5rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .td-modal-close:hover { background: var(--bg-tertiary); border-color: var(--accent); }
+        .td-modal-body { padding: 1.25rem; color: var(--text-primary); font-size: 0.95rem; }
+        .td-modal-footer {
+            padding: 1rem 1.25rem; border-top: 1px solid var(--border);
+            display: flex; justify-content: flex-end; gap: 0.5rem; background: var(--bg-secondary);
+        }
+        .td-modal-textarea {
+            width: 100%; min-height: 100px; resize: vertical; padding: 0.75rem;
+            background: var(--bg-tertiary); border: 1px solid var(--border);
+            border-radius: 0.5rem; color: var(--text-primary); font-family: inherit;
+        }
+        .td-modal-textarea:focus { outline: none; border-color: var(--accent); }
     </style>
 </head>
-
 <body>
-   
     <div class="dashboard-layout">
         {% include '_admin_topnav.html' %}
-        <main class="main-content">
-            <div class="content-header">
-                <h1>Institution Control Tower</h1>
-                <p>{{ institution.get('name', 'Institution') }} · ID: {{ institution_id }}</p>
+        <main class="main-content" style="margin-left:0;">
+
+            <!-- Page Header -->
+            <div style="padding:2rem 2rem 1rem;">
+                <h1 style="font-size:2.5rem; font-weight:800; margin-bottom:0.25rem;">Admin Control Tower</h1>
+                <p style="opacity:0.7; font-size:1.05rem;">{{ institution.get('name', 'Institution') }} · ID: {{ institution_id }}</p>
             </div>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-            {% endif %}
+                {% if messages %}
+                <div style="padding: 0 2rem;">
+                    {% for cat, msg in messages %}
+                    <div style="margin-bottom:0.75rem; padding:0.85rem 1rem; border-radius:0.75rem; border-left:4px solid;
+                        {% if cat == 'success' %}background:rgba(52,211,153,.1);border-color:#34d399;color:#34d399
+                        {% elif cat == 'error' %}background:rgba(239,68,68,.1);border-color:#ef4444;color:#ef4444
+                        {% else %}background:rgba(59,130,246,.1);border-color:#3b82f6;color:#3b82f6{% endif %}">
+                        {{ msg }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
             {% endwith %}
 
-            <div class="academic-split">
-                <div class="syllabus-panel">
-                    <!-- Behavioral Heatmap -->
-                    <div class="study-island heatmap-island">
-                        <div class="study-island-header">
-                            <h3>Institutional Behavior Heatmap</h3>
-                        </div>
-                        <div id="heatmapContainer" class="heatmap-grid"
-                            style="grid-template-columns: 40px repeat(12, 1fr) 10px repeat(12, 1fr); margin-top:16px;">
-                            <div></div>
-                            {% for h in range(24) %}
-                            <div style="font-size: 8px; text-align: center; color: var(--text-muted);">{{ h }}</div>
-                            {% if h == 11 %} <div></div> {% endif %}
-                            {% endfor %}
-
-                            {% set days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
-                            {% for d in range(7) %}
-                            <div class="heatmap-label" style="font-size:10px; color:var(--text-muted);">{{ days[d] }}
+            <div class="dashboard-grid">
+                <!-- LEFT COLUMN -->
+                <div style="display:flex; flex-direction:column; gap:1.5rem;">
+                    <!-- Stats Strip -->
+                    <div class="island">
+                        <div class="stats-strip">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ teachers|length }}</div>
+                                <div class="stat-label">Teachers</div>
                             </div>
-                            {% for h in range(24) %}
-                            {% set key = d|string + "-" + h|string %}
-                            {% set count = heatmap_data.get(key, 0) %}
-                            {% set level = 0 %}
-                            {% if count > 10 %} {% set level = 3 %}
-                            {% elif count > 5 %} {% set level = 2 %}
-                            {% elif count > 0 %} {% set level = 1 %}
-                            {% endif %}
-                            <div class="heatmap-cell level-{{ level }}"
-                                title="{{ days[d] }} {{ h }}:00 - {{ count }} sessions"></div>
-                            {% if h == 11 %} <div class="heatmap-spacer"></div> {% endif %}
-                            {% endfor %}
-                            {% endfor %}
+                            <div class="stat-card">
+                                <div class="stat-number">{{ students|length }}</div>
+                                <div class="stat-label">Students</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ at_risk_students|length }}</div>
+                                <div class="stat-label">At Risk</div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Teacher Management -->
-                    <div class="study-island">
-                        <div class="study-island-header">
-                            <h3>Teacher Management</h3>
-                            <form method="POST" action="{{ url_for('institution_admin_create_teacher_invite') }}">
-                                <button type="submit" class="btn btn-primary btn-small">Generate Teacher Invite</button>
-                            </form>
+                    <!-- Activity Heatmap (4-period) -->
+                    <div class="island">
+                        <div class="island-header">
+                            <h3 class="island-title">
+                                <span class="material-symbols-outlined">schedule</span>
+                                Weekly Activity Pattern
+                            </h3>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                <span style="display: inline-block; width: 12px; height: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-subtle); border-radius: 2px; margin-right: 4px;"></span> Low
+                                <span style="display: inline-block; width: 12px; height: 12px; background: rgba(52,211,153,0.3); border: 1px solid rgba(52,211,153,0.5); border-radius: 2px; margin:0 4px 0 8px;"></span> Medium
+                                <span style="display: inline-block; width: 12px; height: 12px; background: rgba(52,211,153,0.9); border-radius: 2px; margin:0 4px 0 8px;"></span> High
+                            </div>
                         </div>
+                        <div class="heatmap-grid">
+                            <div></div>
+                            {% set periods = ['Morning', 'Afternoon', 'Evening', 'Night'] %}
+                            {% for period in periods %}
+                            <div class="heatmap-period">{{ period[:3] }}</div>
+                            {% endfor %}
 
-                        {% if teachers %}
-                        {% for t in teachers %}
-                        <div class="study-item">
-                            <div class="study-item-body">
-                                <div class="study-item-title">{{ t.get('name', 'Teacher') }}</div>
-                                <div class="study-item-meta">{{ t.get('email', '') }} · Status: {{ t.get('status',
-                                    'unknown') }}</div>
+                            {% set days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] %}
+                            {% set period_keys = [6, 12, 18, 22] %}
+                            {% for d in range(7) %}
+                            <div class="heatmap-label">{{ days[d] }}</div>
+                            {% for h in period_keys %}
+                            {% set key = d|string + "-" + h|string %}
+                            {% set total_count = heatmap_data.get(key, 0) %}
+                            {% set level = 0 %}
+                            {% if total_count > 10 %} {% set level = 3 %}
+                            {% elif total_count > 5 %} {% set level = 2 %}
+                            {% elif total_count > 0 %} {% set level = 1 %}
+                            {% endif %}
+                            <div class="heatmap-cell level-{{ level }}" title="{{ days[d] }} {{ periods[loop.index0] }} - {{ total_count }} sessions">
+                                {% if total_count > 0 %}
+                                <span class="heatmap-count">{{ total_count }}</span>
+                                {% endif %}
                             </div>
-                            <div class="study-item-actions">
-                                <form method="POST"
-                                    action="{{ url_for('institution_admin_disable_teacher', teacher_uid=t.get('uid')) }}"
-                                    style="display:inline;">
-                                    <button type="submit" class="btn btn-small btn-secondary">Disable</button>
-                                </form>
-                            </div>
+                            {% endfor %}
+                            {% endfor %}
                         </div>
-                        {% endfor %}
-                        {% else %}
-                        <div class="empty-state">
-                            <p>No teachers registered yet.</p>
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
 
-                <div class="study-tools-panel">
-                    <!-- Risk Analytics -->
-                    <div class="study-island">
-                        <div class="study-island-header">
-                            <h3>Predictive Risk Center</h3>
+                <!-- RIGHT COLUMN -->
+                <div style="display:flex; flex-direction:column; gap:1.5rem;">
+                    <!-- Teacher Management -->
+                    <div class="island">
+                        <div class="island-header">
+                            <h3 class="island-title">
+                                <span class="material-symbols-outlined">group</span>
+                                Teachers
+                            </h3>
+                            <form method="POST" action="{{ url_for('institution_admin_create_teacher_invite') }}" style="display:inline;">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <span class="material-symbols-outlined" style="font-size:0.9rem;">add</span> Generate Invite
+                                </button>
+                            </form>
                         </div>
-                        <div class="risk-list" style="margin-top:16px;">
+                        <div class="teacher-list">
+                            {% for t in teachers %}
+                            <div class="teacher-card">
+                                <div class="teacher-info">
+                                    <div class="teacher-name">{{ t.get('name', 'Teacher') }}</div>
+                                    <div class="teacher-meta">{{ t.get('email', '') }} · Status: {{ t.get('status', 'unknown') }}</div>
+                                </div>
+                                <div class="action-btns">
+                                    <button class="btn btn-secondary btn-sm" onclick="openTeacherAction('disable', '{{ t.get('uid') }}', '{{ t.get('name', 'Teacher')|e }}')">Disable</button>
+                                    <button class="btn btn-danger btn-sm" onclick="openTeacherAction('delete', '{{ t.get('uid') }}', '{{ t.get('name', 'Teacher')|e }}')">Delete</button>
+                                </div>
+                            </div>
+                            {% else %}
+                            <p style="color:var(--text-muted); text-align:center; padding:1rem;">No teachers registered yet.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Risk Center -->
+                    <div class="island">
+                        <div class="island-header">
+                            <h3 class="island-title">
+                                <span class="material-symbols-outlined" style="color:#ef4444;">warning</span>
+                                Priority: At-Risk Students
+                            </h3>
+                            <span class="badge" style="background:rgba(239,68,68,0.1); color:#ef4444; padding:0.25rem 0.75rem; border-radius:100px; font-size:0.8rem; font-weight:600;">{{ at_risk_students|length }}</span>
+                        </div>
+                        <div class="risk-list">
                             {% if at_risk_students %}
                             {% for student in at_risk_students %}
-                            <div class="study-item" style="border-left: 4px solid var(--accent-red);">
-                                <div class="study-item-body">
-                                    <div class="study-item-title">{{ student.name }}</div>
-                                    <div class="study-item-meta">{{ student.class }} · {{ student.status.title() }}
-                                    </div>
+                            <div class="risk-item">
+                                <div class="risk-info">
+                                    <div class="risk-name">{{ student.name }}</div>
+                                    <div class="risk-class">{{ student.class }} · {{ student.status.title() }}</div>
                                 </div>
-                                <div class="study-item-actions">
-                                    <button class="btn btn-small btn-primary nudge-btn"
-                                        data-uid="{{ student.uid }}">Nudge</button>
-                                </div>
+                                <button class="btn btn-primary btn-sm nudge-trigger" data-uid="{{ student.uid }}" data-name="{{ student.name|e }}">Nudge</button>
                             </div>
                             {% endfor %}
                             {% else %}
-                            <p style="color:var(--text-muted); font-size:14px;">All students are tracking well.</p>
+                            <p style="color:var(--text-muted); text-align:center; padding:1rem;">All students are progressing well.</p>
                             {% endif %}
                         </div>
                     </div>
 
                     <!-- Broadcast -->
-                    <div class="study-island">
-                        <div class="study-island-header">
-                            <h3>Global Broadcast</h3>
+                    <div class="island">
+                        <div class="island-header">
+                            <h3 class="island-title">
+                                <span class="material-symbols-outlined">campaign</span>
+                                Broadcast Message
+                            </h3>
                         </div>
-                        <form method="POST" action="{{ url_for('broadcast_message') }}" style="margin-top:12px;">
-                            <textarea name="message" placeholder="Type announcement for all students..." required
-                                style="width:100%; height:80px; background:var(--bg-secondary); border:1px solid var(--border); color:var(--text-primary); border-radius:8px; padding:12px; margin-bottom:12px; font-family:inherit;"></textarea>
-                            <button type="submit" class="btn btn-secondary" style="width:100%;">Broadcast to
-                                Institution</button>
+                        <form id="broadcastForm" method="POST" action="{{ url_for('broadcast_message') }}">
+                            <textarea name="message" class="td-modal-textarea" placeholder="Type announcement for all students..." required style="margin-bottom:0.75rem;"></textarea>
+                            <button type="submit" class="btn btn-primary" style="width:100%;">
+                                <span class="material-symbols-outlined">send</span> Broadcast to Institution
+                            </button>
                         </form>
+                        <div id="broadcastFeedback" style="margin-top:0.5rem; display:none;"></div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- Teacher Action Modal -->
+    <div class="td-modal-overlay" id="teacherActionModal">
+        <div class="td-modal">
+            <div class="td-modal-header">
+                <h3 class="td-modal-title" id="teacherActionTitle">Confirm</h3>
+                <button class="td-modal-close" onclick="closeTeacherActionModal()">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="td-modal-body" id="teacherActionBody"></div>
+            <div class="td-modal-footer">
+                <button class="btn btn-secondary" onclick="closeTeacherActionModal()">Cancel</button>
+                <form id="teacherActionForm" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" id="teacherActionConfirmBtn">Confirm</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nudge Modal -->
+    <div class="td-modal-overlay" id="nudgeModal">
+        <div class="td-modal">
+            <div class="td-modal-header">
+                <h3 class="td-modal-title" id="nudgeModalTitle">Send Nudge</h3>
+                <button class="td-modal-close" onclick="closeNudgeModal()">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="td-modal-body">
+                <label style="font-weight:600; display:block; margin-bottom:0.5rem;">Message to <span id="nudgeStudentName"></span></label>
+                <textarea id="nudgeMessage" class="td-modal-textarea" placeholder="Keep up the great work! ..."></textarea>
+            </div>
+            <div class="td-modal-footer">
+                <button class="btn btn-secondary" onclick="closeNudgeModal()">Cancel</button>
+                <button class="btn btn-primary" id="nudgeSendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        (function () {
-            const root = document.documentElement;
-            const savedTheme = localStorage.getItem("sclera-theme");
-            if (savedTheme) root.setAttribute("data-theme", savedTheme);
-        })();
+    (function() {
+        const root = document.documentElement;
+        const saved = localStorage.getItem('sclera-theme');
+        if (saved) root.setAttribute('data-theme', saved);
+    })();
 
-        document.querySelectorAll('.nudge-btn').forEach(btn => {
-            btn.onclick = async () => {
-                const studentUid = btn.dataset.uid;
-                const message = prompt("Enter nudge message:", "Your mentor has noticed a slight dip. Can we help with anything?");
-                if (message === null) return;
+    // ── Teacher action modal ─────────────────────────
+    const teacherActionModal = document.getElementById('teacherActionModal');
+    const teacherActionTitle = document.getElementById('teacherActionTitle');
+    const teacherActionBody = document.getElementById('teacherActionBody');
+    const teacherActionForm = document.getElementById('teacherActionForm');
+    const teacherActionConfirmBtn = document.getElementById('teacherActionConfirmBtn');
 
-                const res = await fetch('/institution/nudge', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ student_uid: studentUid, message: message })
-                });
+    window.openTeacherAction = function(action, teacherUid, teacherName) {
+        const title = action === 'disable' ? 'Disable Teacher' : 'Delete Teacher';
+        const message = action === 'disable' ?
+            `Disable <strong>${teacherName}</strong>? They will no longer have access.` :
+            `Permanently delete <strong>${teacherName}</strong>? This action cannot be undone.`;
 
-                const data = await res.json();
-                if (data.success) {
-                    btn.textContent = "Sent!";
-                    btn.disabled = true;
-                }
-            };
+        teacherActionTitle.textContent = title;
+        teacherActionBody.innerHTML = message;
+        teacherActionForm.action = action === 'disable' ?
+            `{{ url_for('institution_admin_disable_teacher', teacher_uid='') }}${teacherUid}` :
+            `{{ url_for('institution_admin_delete_teacher', teacher_uid='') }}${teacherUid}`;
+        teacherActionConfirmBtn.textContent = action === 'disable' ? 'Disable' : 'Delete';
+        teacherActionModal.classList.add('open');
+    };
+
+    function closeTeacherActionModal() {
+        teacherActionModal.classList.remove('open');
+    }
+    teacherActionModal.addEventListener('click', (e) => {
+        if (e.target === teacherActionModal) closeTeacherActionModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeTeacherActionModal();
+    });
+
+    // ── Nudge modal ──────────────────────────────────
+    const nudgeModal = document.getElementById('nudgeModal');
+    const nudgeStudentName = document.getElementById('nudgeStudentName');
+    const nudgeMessage = document.getElementById('nudgeMessage');
+    const nudgeSendBtn = document.getElementById('nudgeSendBtn');
+    let currentNudgeUid = null;
+
+    document.querySelectorAll('.nudge-trigger').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentNudgeUid = btn.dataset.uid;
+            nudgeStudentName.textContent = btn.dataset.name;
+            nudgeMessage.value = '';
+            nudgeModal.classList.add('open');
         });
-    </script>
-    
-</body>
+    });
 
+    function closeNudgeModal() {
+        nudgeModal.classList.remove('open');
+    }
+    nudgeModal.addEventListener('click', (e) => {
+        if (e.target === nudgeModal) closeNudgeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeNudgeModal();
+    });
+
+    nudgeSendBtn.addEventListener('click', async () => {
+        const message = nudgeMessage.value.trim();
+        if (!message) {
+            alert('Please enter a message.');
+            return;
+        }
+        try {
+            const res = await fetch('/institution/nudge', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ student_uid: currentNudgeUid, message })
+            });
+            const data = await res.json();
+            if (data.success) {
+                closeNudgeModal();
+                alert('Nudge sent successfully!');
+            } else {
+                alert('Failed to send nudge. Please try again.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Network error. Please check console.');
+        }
+    });
+
+    // ── Broadcast AJAX ───────────────────────────────
+    const broadcastForm = document.getElementById('broadcastForm');
+    const broadcastFeedback = document.getElementById('broadcastFeedback');
+    broadcastForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(broadcastForm);
+        try {
+            const res = await fetch(broadcastForm.action, {
+                method: 'POST',
+                body: formData
+            });
+            if (res.redirected) {
+                // If backend redirects after success, just reload
+                window.location.href = res.url;
+            } else {
+                const text = await res.text();
+                broadcastFeedback.style.display = 'block';
+                broadcastFeedback.innerHTML = '<div style="padding:0.5rem 1rem; background:rgba(52,211,153,0.1); border:1px solid #34d399; border-radius:0.5rem; color:#34d399;">Message broadcast successfully!</div>';
+                broadcastForm.reset();
+                setTimeout(() => broadcastFeedback.style.display = 'none', 3000);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Broadcast failed. Please try again.');
+        }
+    });
+    </script>
+</body>
 </html>

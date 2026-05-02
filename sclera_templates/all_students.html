@@ -1,216 +1,152 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-
 <head>
     <meta charset="UTF-8">
-    <title>All Students | StudyOS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Students | Sclera</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
+        body { font-family: 'Outfit', sans-serif; }
+
+        .page-wrap {
             padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+            box-sizing: border-box;
         }
+        @media (max-width: 768px) {
+            .page-wrap { padding: 1rem; }
+        }
+
         .island {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
             border-radius: 1.5rem;
-            padding: 1.5rem;
-            backdrop-filter: blur(12px);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            padding: 1.75rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            width: 100%;
+            box-sizing: border-box;
         }
-        .island-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-            gap: .75rem;
-        }
-        .island-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        @media (max-width: 480px) {
+            .island { padding: 1.25rem; border-radius: 1.25rem; }
         }
 
-        /* ── Stats ─────────────────────────────────────────────── */
-        .stats-grid {
+        .island-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;
+        }
+        .island-title {
+            font-size: 1.2rem; font-weight: 700; margin: 0;
+            display: flex; align-items: center; gap: 0.5rem;
+            color: var(--text-primary);
+        }
+        .island-title .material-symbols-outlined { color: var(--accent); font-size: 1.3rem; }
+
+        /* Stats strip */
+        .stats-strip {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 1rem;
+        }
+        @media (max-width: 768px) {
+            .stats-strip { grid-template-columns: repeat(2, 1fr); }
         }
         .stat-card {
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
             border-radius: 1rem;
-            padding: 1.25rem;
+            padding: 1rem 1.25rem;
             text-align: center;
         }
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--accent);
-        }
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            margin-top: 4px;
-        }
+        .stat-number { font-size: 2rem; font-weight: 800; color: var(--accent); }
+        .stat-number.danger { color: #ef4444; }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
 
-        /* ── Filter bar ────────────────────────────────────────── */
+        /* Filter bar */
         .filter-bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: .75rem;
-            align-items: flex-end;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 1rem;
-            padding: 1rem 1.25rem;
-            margin-bottom: 1.25rem;
+            display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end;
+            background: var(--bg-tertiary); border: 1px solid var(--border);
+            border-radius: 1rem; padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+        }
+        @media (max-width: 768px) {
+            .filter-bar { flex-direction: column; align-items: stretch; }
         }
         .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: .35rem;
-            min-width: 130px;
+            display: flex; flex-direction: column; gap: 0.35rem; min-width: 130px;
+        }
+        @media (max-width: 768px) {
+            .filter-group { min-width: 0; }
         }
         .filter-group label {
-            font-size: 0.72rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: .5px;
+            font-size: 0.72rem; font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
         .filter-group select,
         .filter-group input[type="number"],
-        .filter-group input[type="range"] {
-            background: var(--bg-secondary);
+        .filter-group input[type="text"] {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 0.5rem; color: var(--text-primary); padding: 0.5rem;
+            font-size: 0.85rem; width: 100%; box-sizing: border-box;
+        }
+        .filter-range-row { display: flex; align-items: center; gap: 0.4rem; }
+        .filter-range-row input[type="number"] { width: 70px; }
+        @media (max-width: 480px) {
+            .filter-range-row input[type="number"] { width: 100%; }
+        }
+        .filter-actions { display: flex; gap: 0.5rem; align-items: flex-end; padding-bottom: 2px; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.55rem 1.2rem; border-radius: 0.7rem; font-size: 0.85rem;
+            font-weight: 700; cursor: pointer; text-decoration: none; border: none;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-secondary {
+            background: var(--bg-tertiary); color: var(--text-primary);
             border: 1px solid var(--border);
-            border-radius: .5rem;
-            color: var(--text-primary);
-            padding: .4rem .65rem;
-            font-size: 0.85rem;
-            width: 100%;
         }
-        .filter-group input[type="range"] {
-            padding: 0;
-            cursor: pointer;
-            accent-color: var(--accent);
-        }
-        .filter-range-row {
-            display: flex;
-            align-items: center;
-            gap: .4rem;
-        }
-        .filter-range-row input[type="number"] {
-            width: 60px;
-        }
-        .filter-actions {
-            display: flex;
-            gap: .5rem;
-            align-items: flex-end;
-            padding-bottom: 2px;
-        }
-        .btn-filter {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: .5rem;
-            padding: .45rem 1rem;
-            font-size: .8rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: opacity .2s;
-        }
-        .btn-filter:hover { opacity: .85; }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
         .btn-filter-reset {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-            border-radius: .5rem;
-            padding: .45rem 1rem;
-            font-size: .8rem;
-            font-weight: 600;
-            cursor: pointer;
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            color: var(--text-primary); border-radius: 0.5rem; padding: 0.45rem 1rem;
+            font-size: 0.8rem; font-weight: 600; cursor: pointer;
         }
-        .filter-count {
-            font-size: .8rem;
-            color: var(--text-muted);
-            align-self: flex-end;
-            padding-bottom: 4px;
-        }
+        .btn-filter-reset:hover { border-color: var(--accent); color: var(--accent); }
+        .filter-count { font-size: 0.8rem; color: var(--text-muted); padding-bottom: 4px; }
 
-        /* ── Table ─────────────────────────────────────────────── */
-        .students-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            background: var(--bg-secondary);
+        /* Table container */
+        .students-table-wrapper {
+            overflow-x: auto;
             border-radius: 1rem;
-            overflow: hidden;
+            border: 1px solid var(--border);
         }
-        .students-table thead { background: var(--bg-tertiary); }
-        .students-table th {
-            padding: 1rem;
-            text-align: left;
-            font-weight: 600;
-            font-size: .8rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            cursor: pointer;
-            user-select: none;
-            white-space: nowrap;
+        .students-table {
+            width: 100%; border-collapse: collapse;
+            background: var(--bg-secondary);
         }
-        .students-table th:hover { color: var(--accent); }
-        .students-table th .sort-icon { margin-left: 4px; font-size: .7rem; }
-        .students-table tbody tr {
-            border-bottom: 1px solid var(--border);
-            transition: all .2s ease;
+        .students-table thead th {
+            background: var(--bg-tertiary); padding: 1rem; text-align: left;
+            font-weight: 600; font-size: 0.8rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            cursor: pointer; user-select: none; white-space: nowrap;
         }
-        .students-table tbody tr:hover {
-            background: var(--bg-tertiary);
-            transform: translateX(4px);
+        .students-table thead th:hover { color: var(--accent); }
+        .students-table tbody tr:hover { background: var(--bg-hover, rgba(255,255,255,0.04)); }
+        .students-table td {
+            padding: 0.85rem 1rem; border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
         }
-        .students-table tbody tr:last-child { border-bottom: none; }
-        .students-table td { padding: .85rem 1rem; font-size: .88rem; }
-        .students-table tr[hidden] { display: none !important; }
+        .students-table tr:last-child td { border-bottom: none; }
 
-        /* ── Progress bar ──────────────────────────────────────── */
-        .progress-bar-mini {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            min-width: 120px;
-        }
-        .progress-track {
-            flex: 1;
-            height: 6px;
-            background: var(--bg-tertiary);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-        .progress-fill-mini { height: 100%; background: var(--accent); border-radius: 3px; }
-        .progress-text-mini { font-size: .8rem; color: var(--text-muted); white-space: nowrap; }
-
-        /* ── Risk badges ───────────────────────────────────────── */
+        /* Badges */
         .risk-badge {
-            display: inline-block;
-            padding: .2rem .65rem;
-            border-radius: 100px;
-            font-size: .75rem;
-            font-weight: 700;
+            display: inline-block; padding: 0.2rem 0.65rem; border-radius: 100px;
+            font-size: 0.75rem; font-weight: 700;
         }
         .risk-healthy   { background: rgba(34,197,94,.12);  color: #22c55e; }
         .risk-stagnating{ background: rgba(245,158,11,.12); color: #f59e0b; }
@@ -219,50 +155,34 @@
         .risk-at_risk   { background: rgba(239,68,68,.2);   color: #ef4444; }
 
         .readiness-badge {
-            display: inline-block;
-            padding: .2rem .65rem;
-            border-radius: 100px;
-            font-size: .75rem;
-            font-weight: 700;
+            display: inline-block; padding: 0.2rem 0.65rem; border-radius: 100px;
+            font-size: 0.75rem; font-weight: 700;
         }
         .readiness-high   { background: rgba(34,197,94,.12);  color: #22c55e; }
         .readiness-medium { background: rgba(245,158,11,.12); color: #f59e0b; }
         .readiness-low    { background: rgba(239,68,68,.12);  color: #ef4444; }
 
         .ai-indicator {
-            display: inline-block;
-            font-size: .65rem;
-            padding: 1px 5px;
-            background: rgba(59,130,246,.15);
-            color: #3b82f6;
-            border-radius: 4px;
-            margin-left: 4px;
-            font-weight: 700;
+            display: inline-block; font-size: 0.65rem; padding: 1px 5px;
+            background: rgba(59,130,246,.15); color: #3b82f6;
+            border-radius: 4px; margin-left: 4px; font-weight: 700;
         }
         .tooltip-text {
-            font-size: .7rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-            max-width: 200px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 0.7rem; color: var(--text-muted); max-width: 200px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .btn { padding: .35rem .75rem; border-radius: .5rem; border: none;
-               font-size: .75rem; font-weight: 600; cursor: pointer; text-decoration: none;
-               display: inline-flex; align-items: center; gap: .35rem; }
-        .btn-primary { background: var(--accent); color: #fff; }
-        .btn-secondary { background: var(--bg-tertiary); color: var(--text-primary);
-                         border: 1px solid var(--border); }
-        .empty-state { text-align: center; padding: 3rem; opacity: .6; }
-        @media (max-width: 768px) {
-            .dashboard-grid { padding: 1rem; }
-            .filter-bar { flex-direction: column; }
-            .students-table-container { overflow-x: auto; }
+        .progress-bar-mini {
+            display: flex; align-items: center; gap: 0.5rem; min-width: 100px;
         }
+        .progress-track {
+            flex: 1; height: 6px; background: var(--bg-tertiary); border-radius: 3px; overflow: hidden;
+        }
+        .progress-fill-mini {
+            height: 100%; background: var(--accent); border-radius: 3px;
+        }
+        .empty-state { text-align: center; padding: 3rem; opacity: 0.6; }
     </style>
 </head>
-
 <body>
     <div class="dashboard-layout">
         {% if profile.get('account_type') == 'admin' %}
@@ -271,32 +191,31 @@
             {% include '_teacher_topnav.html' %}
         {% endif %}
 
-        <main class="main-content" style="margin-left:0">
-            <div class="content-header" style="padding: 2rem 2rem 1rem;">
-                <h1 style="font-size:2.2rem;font-weight:800;margin-bottom:.5rem">Student Directory</h1>
-                <p style="opacity:.7;font-size:1rem">Monitor progress, risk levels and engagement</p>
-            </div>
+        <main class="main-content" style="margin-left:0;">
+            <div class="page-wrap">
 
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                <div style="padding: 0 2rem;">
-                    {% for cat, msg in messages %}
-                    <div class="alert alert-{{ cat }}" style="margin-bottom:.75rem;padding:.85rem 1rem;border-radius:.75rem;border-left:4px solid;
-                        {% if cat == 'success' %}background:rgba(52,211,153,.1);border-color:#34d399;color:#34d399
-                        {% elif cat == 'error' %}background:rgba(239,68,68,.1);border-color:#ef4444;color:#ef4444
-                        {% else %}background:rgba(59,130,246,.1);border-color:#3b82f6;color:#3b82f6{% endif %}">
-                        {{ msg }}
-                    </div>
-                    {% endfor %}
+                <!-- Page Header -->
+                <div>
+                    <h1 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 0.5rem;">Student Directory</h1>
+                    <p style="opacity: 0.7; font-size: 1rem;">Monitor progress, risk levels and engagement</p>
                 </div>
-                {% endif %}
-            {% endwith %}
 
-            <div class="dashboard-grid">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for cat, msg in messages %}
+                        <div style="padding: 0.85rem 1rem; border-radius: 0.75rem; border-left: 4px solid;
+                            {% if cat == 'success' %}background:rgba(52,211,153,.1);border-color:#34d399;color:#34d399
+                            {% elif cat == 'error' %}background:rgba(239,68,68,.1);border-color:#ef4444;color:#ef4444
+                            {% else %}background:rgba(59,130,246,.1);border-color:#3b82f6;color:#3b82f6{% endif %}">
+                            {{ msg }}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
 
-                <!-- ── Stats overview ─────────────────────────────────── -->
+                <!-- Stats Island -->
                 <div class="island">
-                    <div class="stats-grid">
+                    <div class="stats-strip">
                         <div class="stat-card">
                             <div class="stat-number">{{ total_students }}</div>
                             <div class="stat-label">Total Students</div>
@@ -312,15 +231,13 @@
                             <div class="stat-label">Active This Week</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number" style="color:#ef4444">
-                                {{ students|selectattr('risk_level','in',['at_risk','stagnating','declining','critical'])|list|length if students else 0 }}
-                            </div>
+                            <div class="stat-number danger">{{ students|selectattr('risk_level','in',['at_risk','stagnating','declining','critical'])|list|length if students else 0 }}</div>
                             <div class="stat-label">At-Risk</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ── Student table with filters ─────────────────────── -->
+                <!-- Table + Filters Island -->
                 <div class="island">
                     <div class="island-header">
                         <h3 class="island-title">
@@ -330,9 +247,8 @@
                         <span id="filter-count-badge" class="filter-count">{{ total_students }} students</span>
                     </div>
 
-                    <!-- Filter bar -->
+                    <!-- Filters -->
                     <div class="filter-bar" id="filterBar">
-                        <!-- Risk level -->
                         <div class="filter-group">
                             <label>Risk Level</label>
                             <select id="f-risk">
@@ -344,8 +260,6 @@
                                 <option value="at_risk">At Risk (AI)</option>
                             </select>
                         </div>
-
-                        <!-- Progress range -->
                         <div class="filter-group">
                             <label>Progress (%)</label>
                             <div class="filter-range-row">
@@ -354,30 +268,24 @@
                                 <input type="number" id="f-prog-max" placeholder="100" min="0" max="100" value="">
                             </div>
                         </div>
-
-                        <!-- Avg exam score -->
                         <div class="filter-group">
-                            <label>Avg Exam Score (%)</label>
+                            <label>Avg Exam (%)</label>
                             <div class="filter-range-row">
                                 <input type="number" id="f-exam-min" placeholder="0" min="0" max="100" value="">
                                 <span style="color:var(--text-muted)">–</span>
                                 <input type="number" id="f-exam-max" placeholder="100" min="0" max="100" value="">
                             </div>
                         </div>
-
-                        <!-- Study time this week -->
                         <div class="filter-group">
-                            <label>Study Time Week (min)</label>
+                            <label>Study Time (min)</label>
                             <div class="filter-range-row">
                                 <input type="number" id="f-study-min" placeholder="0" min="0" value="">
                                 <span style="color:var(--text-muted)">–</span>
                                 <input type="number" id="f-study-max" placeholder="∞" min="0" value="">
                             </div>
                         </div>
-
-                        <!-- Last active -->
                         <div class="filter-group">
-                            <label>Last Active (days)</label>
+                            <label>Last Active</label>
                             <select id="f-active">
                                 <option value="">Any</option>
                                 <option value="0">Today</option>
@@ -387,21 +295,17 @@
                                 <option value="999">Never</option>
                             </select>
                         </div>
-
-                        <!-- Search -->
                         <div class="filter-group" style="min-width:170px">
                             <label>Search</label>
-                            <input type="text" id="f-search" placeholder="Name or email…"
-                                   style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:.5rem;color:var(--text-primary);padding:.4rem .65rem;font-size:.85rem;width:100%">
+                            <input type="text" id="f-search" placeholder="Name or email…">
                         </div>
-
                         <div class="filter-actions">
                             <button class="btn-filter-reset" onclick="resetFilters()">Reset</button>
                         </div>
-                    </div><!-- /filter-bar -->
+                    </div>
 
-                    <!-- Student table -->
-                    <div class="students-table-container" style="overflow-x:auto;border-radius:1rem">
+                    <!-- Table -->
+                    <div class="students-table-wrapper">
                         <table class="students-table" id="studentsTable">
                             <thead>
                                 <tr>
@@ -432,63 +336,48 @@
                                     data-study="{{ study_min }}"
                                     data-days="{{ days }}"
                                 >
-                                    <!-- Name -->
                                     <td>
                                         <strong>{{ student.get('name', 'Unknown') }}</strong>
                                         {% if student.get('ai_detected') %}
                                         <span class="ai-indicator">AI</span>
                                         {% endif %}
                                     </td>
-                                    <!-- Email -->
-                                    <td style="color:var(--text-muted);font-size:.82rem">{{ student.get('email', '—') }}</td>
-                                    <!-- Classes -->
-                                    <td style="font-size:.82rem">{{ student.get('class_names', 'No class') }}</td>
-                                    <!-- Progress -->
+                                    <td style="color:var(--text-muted); font-size:0.82rem;">{{ student.get('email', '—') }}</td>
+                                    <td style="font-size:0.82rem;">{{ student.get('class_names', 'No class') }}</td>
                                     <td>
                                         <div class="progress-bar-mini">
                                             <div class="progress-track">
                                                 <div class="progress-fill-mini" style="width:{{ progress }}%"></div>
                                             </div>
-                                            <span class="progress-text-mini">{{ progress }}%</span>
+                                            <span style="font-size:0.85rem; color:var(--text-primary);">{{ progress }}%</span>
                                         </div>
                                     </td>
-                                    <!-- Avg Exam -->
                                     <td>
                                         {% if avg_exam > 0 %}
                                         <div class="progress-bar-mini">
                                             <div class="progress-track">
-                                                <div class="progress-fill-mini" style="width:{{ avg_exam }}%;background:{{'#22c55e' if avg_exam>=70 else ('#f59e0b' if avg_exam>=40 else '#ef4444')}}"></div>
+                                                <div class="progress-fill-mini" style="width:{{ avg_exam }}%; background:{{ '#22c55e' if avg_exam>=70 else ('#f59e0b' if avg_exam>=40 else '#ef4444') }}"></div>
                                             </div>
-                                            <span class="progress-text-mini">{{ avg_exam }}%</span>
+                                            <span style="font-size:0.85rem; color:var(--text-primary);">{{ avg_exam }}%</span>
                                         </div>
                                         {% else %}<span style="color:var(--text-muted)">—</span>{% endif %}
                                     </td>
-                                    <!-- Risk -->
                                     <td>
                                         <span class="risk-badge risk-{{ risk }}">
                                             {{ risk | replace('_',' ') | title }}
                                         </span>
                                         {% if student.get('explanation') %}
-                                        <div class="tooltip-text" title="{{ student.explanation }}">
-                                            {{ student.explanation[:40] }}{% if student.explanation|length > 40 %}…{% endif %}
-                                        </div>
+                                        <div class="tooltip-text">{{ student.explanation[:40] }}{% if student.explanation|length > 40 %}…{% endif %}</div>
                                         {% endif %}
                                     </td>
-                                    <!-- Readiness -->
                                     <td>
                                         {%- set rs = student.get('readiness_score', 0) -%}
                                         {% if rs > 0 %}
                                         <span class="readiness-badge {% if rs >= 70 %}readiness-high{% elif rs >= 40 %}readiness-medium{% else %}readiness-low{% endif %}">
                                             {{ rs }}%
                                         </span>
-                                        {% if student.get('readiness_summary') %}
-                                        <div class="tooltip-text" title="{{ student.readiness_summary }}">
-                                            {{ student.readiness_summary[:30] }}…
-                                        </div>
-                                        {% endif %}
                                         {% else %}<span style="color:var(--text-muted)">—</span>{% endif %}
                                     </td>
-                                    <!-- Last active -->
                                     <td>
                                         {% if days == 999 %}<span style="color:var(--text-muted)">Never</span>
                                         {% elif days == 0 %}<span style="color:#22c55e">Today</span>
@@ -496,16 +385,15 @@
                                         {% elif days <= 7 %}<span>{{ days }}d ago</span>
                                         {% else %}<span style="color:#f59e0b">{{ days }}d ago</span>{% endif %}
                                     </td>
-                                    <!-- Actions -->
                                     <td>
-                                        <div style="display:flex;gap:.4rem;flex-wrap:wrap">
-                                            <a href="{{ url_for('student_detail', student_uid=student.uid) }}" class="btn btn-primary">
-                                                <span class="material-symbols-outlined" style="font-size:.85rem">person</span>
+                                        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+                                            <a href="{{ url_for('student_detail', student_uid=student.uid) }}" class="btn btn-primary btn-sm">
+                                                <span class="material-symbols-outlined" style="font-size:0.85rem;">visibility</span>
                                                 View
                                             </a>
                                             {% if profile.get('account_type') == 'teacher' %}
-                                            <a href="{{ url_for('generate_student_report', student_uid=student.uid) }}" class="btn btn-secondary" title="Download PDF Report">
-                                                <span class="material-symbols-outlined" style="font-size:.85rem">download</span>
+                                            <a href="{{ url_for('generate_student_report', student_uid=student.uid) }}" class="btn btn-secondary btn-sm">
+                                                <span class="material-symbols-outlined" style="font-size:0.85rem;">download</span>
                                                 PDF
                                             </a>
                                             {% endif %}
@@ -513,67 +401,61 @@
                                     </td>
                                 </tr>
                                 {% else %}
-                                <tr id="emptyRow">
-                                    <td colspan="9">
-                                        <div class="empty-state">
-                                            <span class="material-symbols-outlined" style="font-size:3rem;opacity:.3;display:block;margin-bottom:1rem">group_off</span>
-                                            No students found.
-                                        </div>
+                                <tr>
+                                    <td colspan="9" class="empty-state">
+                                        <span class="material-symbols-outlined" style="font-size:3rem; opacity:0.3; display:block; margin:0 auto 1rem;">group_off</span>
+                                        No students found.
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
-                    </div><!-- /table-container -->
+                    </div>
 
-                    <div id="no-results" style="display:none;text-align:center;padding:2.5rem;opacity:.6">
-                        <span class="material-symbols-outlined" style="font-size:2.5rem;display:block;margin-bottom:.75rem">search_off</span>
+                    <div id="no-results" style="display:none; text-align:center; padding:2rem; opacity:0.6;">
+                        <span class="material-symbols-outlined" style="font-size:2.5rem; display:block; margin-bottom:0.75rem;">search_off</span>
                         <p>No students match your filters.</p>
-                        <button class="btn-filter-reset" onclick="resetFilters()" style="margin-top:.5rem">Clear Filters</button>
+                        <button class="btn-filter-reset" onclick="resetFilters()" style="margin-top:0.5rem;">Clear Filters</button>
                     </div>
                 </div>
-            </div><!-- /grid -->
+            </div>
         </main>
     </div>
 
     <script>
-    (function () {
-        // ── Theme ──────────────────────────────────────────────────────────
+    (function() {
         const root = document.documentElement;
         const saved = localStorage.getItem('sclera-theme');
         if (saved) root.setAttribute('data-theme', saved);
 
-        // ── Filter state ──────────────────────────────────────────────────
         const rows = Array.from(document.querySelectorAll('#studentsBody tr[data-risk]'));
         const countBadge = document.getElementById('filter-count-badge');
-        const noResults  = document.getElementById('no-results');
+        const noResults = document.getElementById('no-results');
 
         function getVal(id) { return document.getElementById(id).value.trim(); }
 
         function applyFilters() {
-            const risk     = getVal('f-risk');
-            const progMin  = parseFloat(getVal('f-prog-min'));
-            const progMax  = parseFloat(getVal('f-prog-max'));
-            const examMin  = parseFloat(getVal('f-exam-min'));
-            const examMax  = parseFloat(getVal('f-exam-max'));
+            const risk = getVal('f-risk');
+            const progMin = parseFloat(getVal('f-prog-min'));
+            const progMax = parseFloat(getVal('f-prog-max'));
+            const examMin = parseFloat(getVal('f-exam-min'));
+            const examMax = parseFloat(getVal('f-exam-max'));
             const studyMin = parseFloat(getVal('f-study-min'));
             const studyMax = parseFloat(getVal('f-study-max'));
-            const activeF  = getVal('f-active');
-            const search   = getVal('f-search').toLowerCase();
+            const activeF = getVal('f-active');
+            const search = getVal('f-search').toLowerCase();
 
             let visible = 0;
-
             rows.forEach(row => {
-                const r     = row.dataset.risk;
-                const prog  = parseFloat(row.dataset.progress);
-                const exam  = parseFloat(row.dataset.exam);
+                const r = row.dataset.risk;
+                const prog = parseFloat(row.dataset.progress);
+                const exam = parseFloat(row.dataset.exam);
                 const study = parseFloat(row.dataset.study);
-                const days  = parseFloat(row.dataset.days);
-                const name  = row.dataset.name;
+                const days = parseFloat(row.dataset.days);
+                const name = row.dataset.name;
                 const email = row.dataset.email;
 
                 let show = true;
-
                 if (risk && r !== risk) show = false;
                 if (!isNaN(progMin) && prog < progMin) show = false;
                 if (!isNaN(progMax) && prog > progMax) show = false;
@@ -593,26 +475,26 @@
                 if (show) visible++;
             });
 
-            countBadge.textContent = `${visible} of ${rows.length} students`;
+            countBadge.textContent = visible + ' of ' + rows.length + ' students';
             noResults.style.display = visible === 0 ? 'block' : 'none';
         }
 
-        function resetFilters() {
-            ['f-risk', 'f-active'].forEach(id => document.getElementById(id).value = '');
-            ['f-prog-min','f-prog-max','f-exam-min','f-exam-max','f-study-min','f-study-max','f-search']
-                .forEach(id => document.getElementById(id).value = '');
+        window.resetFilters = function() {
+            document.getElementById('f-risk').value = '';
+            document.getElementById('f-active').value = '';
+            document.getElementById('f-prog-min').value = '';
+            document.getElementById('f-prog-max').value = '';
+            document.getElementById('f-exam-min').value = '';
+            document.getElementById('f-exam-max').value = '';
+            document.getElementById('f-study-min').value = '';
+            document.getElementById('f-study-max').value = '';
+            document.getElementById('f-search').value = '';
             applyFilters();
-        }
-        window.resetFilters = resetFilters;
+        };
 
-        // Attach listeners — live filtering
-        ['f-risk','f-active'].forEach(id =>
-            document.getElementById(id).addEventListener('change', applyFilters));
-        ['f-prog-min','f-prog-max','f-exam-min','f-exam-max',
-         'f-study-min','f-study-max','f-search'].forEach(id =>
-            document.getElementById(id).addEventListener('input', applyFilters));
+        ['f-risk','f-active'].forEach(id => document.getElementById(id).addEventListener('change', applyFilters));
+        ['f-prog-min','f-prog-max','f-exam-min','f-exam-max','f-study-min','f-study-max','f-search'].forEach(id => document.getElementById(id).addEventListener('input', applyFilters));
 
-        // ── Column sort ───────────────────────────────────────────────────
         let sortDir = {};
         window.sortTable = function(col) {
             const tbody = document.getElementById('studentsBody');

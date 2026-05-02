@@ -1,118 +1,225 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile Resume — Sclera</title>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <title>Profile – Sclera</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        .profile-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding: 2rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        @media (max-width: 768px) {
+            .profile-wrap { padding: 1rem; }
+        }
 
+        .hero-banner {
+            position: relative;
+            border-radius: 2rem;
+            overflow: hidden;
+            background: var(--bg-secondary);
+            height: 220px;
+            display: flex;
+            align-items: flex-end;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            width: 100%;
+        }
+        @media (max-width: 480px) {
+            .hero-banner { height: 150px; }
+        }
+        .hero-banner img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .hero-overlay {
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(transparent, rgba(0,0,0,0.6));
+            padding: 1rem;
+            border-radius: 1rem;
+            width: 100%;
+        }
+        .hero-overlay h1 { margin: 0; color: #fff; font-size: 2rem; }
+        .hero-overlay p { color: rgba(255,255,255,0.8); margin: 0.25rem 0 0; }
+
+        .no-banner {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 2rem;
+            padding: 2rem;
+            text-align: center;
+            width: 100%;
+        }
+
+        .profile-pic-large {
+            width: 100px; height: 100px; border-radius: 50%;
+            border: 4px solid var(--bg-primary);
+            object-fit: cover;
+            margin-bottom: 1rem;
+        }
+
+        .island {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            padding: 1.75rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .island-title {
+            font-size: 1.2rem; font-weight: 700; margin: 0 0 1rem;
+            display: flex; align-items: center; gap: 0.5rem;
+            color: var(--text-primary);
+        }
+        .island-title .material-symbols-outlined { color: var(--accent); font-size: 1.3rem; }
+
+        .tag-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .tag {
+            background: var(--bg-tertiary); border: 1px solid var(--border);
+            border-radius: 100px; padding: 0.35rem 1rem;
+            font-size: 0.85rem; color: var(--text-primary);
+        }
+        .cert-list { list-style: none; padding: 0; }
+        .cert-list li {
+            padding: 0.5rem 0; border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.6rem 1.2rem; border-radius: 0.7rem; font-size: 0.85rem;
+            font-weight: 700; text-decoration: none; transition: all 0.2s;
+            border: none; font-family: inherit;
+        }
+        .btn-secondary {
+            background: var(--bg-tertiary); color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    </style>
+</head>
 <body>
     <div class="dashboard-layout">
-
         {% include '_topnav.html' %}
-
-        <main class="main-content">
-
-
-            <div class="profile-container">
+        <main class="main-content" style="margin-left:0;">
+            <div class="profile-wrap">
+                <!-- Hero Banner / Fallback -->
                 {% if profile_banner %}
-                <!-- Hero Banner Section -->
-                <div class="profile-hero-banner">
-                    <img src="{{ url_for('serve_profile_banner', filename=profile_banner.split('/')[1]) }}" alt="Profile banner" class="hero-banner-image">
-                    {% if profile_picture %}
-                    <div class="profile-picture-hero">
-                        <img src="{{ url_for('serve_profile_picture', filename=profile_picture.split('/')[1]) }}" alt="Profile picture" class="hero-profile-pic">
-                    </div>
-                    {% endif %}
-                    <div class="hero-banner-overlay">
-                        <h1 class="hero-name">{{ name }}</h1>
-                        <p class="hero-subtitle">{{ purpose_display }}{% if academic_summary %} · {{ academic_summary }}{% endif %}</p>
-                        <div class="hero-edit-button">
-                            <a href="{{ url_for('profile_edit') }}" class="btn btn-small">Edit Profile</a>
-                        </div>
+                <div class="hero-banner">
+                    <img src="{{ url_for('serve_profile_banner', filename=profile_banner.split('/')[1]) }}" alt="Banner">
+                    <div class="hero-overlay">
+                        <h1>{{ name }}</h1>
+                        <p>{{ purpose_display }}{% if academic_summary %} · {{ academic_summary }}{% endif %}</p>
                     </div>
                 </div>
                 {% elif profile_picture %}
-                <!-- Fallback: Profile picture only -->
-                <div class="profile-hero-fallback">
-                    <div class="profile-picture-large">
-                        <img src="{{ url_for('serve_profile_picture', filename=profile_picture.split('/')[1]) }}" alt="Profile picture" class="profile-pic-banner">
-                    </div>
-                    <div class="hero-fallback-content">
-                        <h1 class="profile-name">{{ name }}</h1>
-                        <p class="profile-subtitle">{{ purpose_display }}</p>
-                        <p class="profile-academic">{{ academic_summary }}</p>
-                        <div class="fallback-edit-button">
-                            <a href="{{ url_for('profile_edit') }}" class="btn btn-small">Edit Profile</a>
-                        </div>
-                    </div>
+                <div class="no-banner">
+                    <img src="{{ url_for('serve_profile_picture', filename=profile_picture.split('/')[1]) }}" alt="Profile" class="profile-pic-large">
+                    <h1 style="margin:0.5rem 0;">{{ name }}</h1>
+                    <p style="color:var(--text-muted);">{{ purpose_display }} · {{ academic_summary }}</p>
                 </div>
                 {% else %}
-                <!-- No banner or picture -->
-                <div class="profile-header-section">
-                    <h1 class="profile-name">{{ name }}</h1>
-                    <p class="profile-subtitle">{{ purpose_display }}</p>
-                    <p class="profile-academic">{{ academic_summary }}</p>
-                    <div style="margin-top:14px;">
-                        <a href="{{ url_for('profile_edit') }}" class="btn">Edit Profile</a>
-                    </div>
+                <div class="no-banner">
+                    <h1 style="margin:0.5rem 0;">{{ name }}</h1>
+                    <p style="color:var(--text-muted);">{{ purpose_display }} · {{ academic_summary }}</p>
                 </div>
                 {% endif %}
 
-                <div class="profile-section">
-                    <h3>About</h3>
-                    <p class="about-text">{{ about if about else 'No bio added yet.' }}</p>
+                <div style="display:flex; justify-content:flex-end;">
+                    <a href="{{ url_for('profile_edit') }}" class="btn btn-secondary">
+                        <span class="material-symbols-outlined">edit</span>
+                        Edit Profile
+                    </a>
                 </div>
 
-                <div class="profile-section">
-                    <h3>Skills</h3>
+                <!-- About -->
+                <div class="island">
+                    <h3 class="island-title">
+                        <span class="material-symbols-outlined">info</span>
+                        About
+                    </h3>
+                    <p style="margin:0; color:var(--text-secondary);">{{ about if about else 'No bio added yet.' }}</p>
+                </div>
+
+                <!-- Skills -->
+                <div class="island">
+                    <h3 class="island-title">
+                        <span class="material-symbols-outlined">bolt</span>
+                        Skills
+                    </h3>
                     {% if skills %}
                     <div class="tag-list">
                         {% for skill in skills %}<span class="tag">{{ skill }}</span>{% endfor %}
                     </div>
                     {% else %}
-                    <p>No skills added yet.</p>
+                    <p style="color:var(--text-muted);">No skills added yet.</p>
                     {% endif %}
                 </div>
 
-                <div class="profile-section">
-                    <h3>Hobbies</h3>
+                <!-- Hobbies -->
+                <div class="island">
+                    <h3 class="island-title">
+                        <span class="material-symbols-outlined">palette</span>
+                        Hobbies
+                    </h3>
                     {% if hobbies %}
                     <div class="tag-list">
                         {% for hobby in hobbies %}<span class="tag">{{ hobby }}</span>{% endfor %}
                     </div>
                     {% else %}
-                    <p>No hobbies added yet.</p>
+                    <p style="color:var(--text-muted);">No hobbies added yet.</p>
                     {% endif %}
                 </div>
 
-                <div class="profile-section">
-                    <h3>Certificates</h3>
+                <!-- Certificates -->
+                <div class="island">
+                    <h3 class="island-title">
+                        <span class="material-symbols-outlined">verified</span>
+                        Certificates
+                    </h3>
                     {% if certificates %}
-                    <ul class="certificates-list">
+                    <ul class="cert-list">
                         {% for cert in certificates %}<li>{{ cert }}</li>{% endfor %}
                     </ul>
                     {% else %}
-                    <p>No certificates added yet.</p>
+                    <p style="color:var(--text-muted);">No certificates added yet.</p>
                     {% endif %}
                 </div>
 
+                <!-- Achievements -->
                 {% if achievements %}
-                <div class="profile-section">
-                    <h3>Achievements</h3>
-                    <ul class="certificates-list">
+                <div class="island">
+                    <h3 class="island-title">
+                        <span class="material-symbols-outlined">emoji_events</span>
+                        Achievements
+                    </h3>
+                    <ul class="cert-list">
                         {% for a in achievements %}<li>{{ a }}</li>{% endfor %}
                     </ul>
                 </div>
                 {% endif %}
 
+                <!-- Goals -->
                 {% if goals %}
-                <div class="profile-section">
-                    <h3>Active Goals</h3>
-                    <ul class="certificates-list">
+                <div class="island">
+                    <h3 class="island-title">
+                        <span class="material-symbols-outlined">target</span>
+                        Active Goals
+                    </h3>
+                    <ul class="cert-list">
                         {% for g in goals %}<li>{{ g.title }}</li>{% endfor %}
                     </ul>
                 </div>
@@ -120,8 +227,5 @@
             </div>
         </main>
     </div>
-
-    {% include 'notifications_snippet.html' %}
 </body>
-
 </html>

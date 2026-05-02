@@ -3763,9 +3763,15 @@ def study_time():
     if session_break:
         hour_id = f"{hour_id}-{int(now.timestamp())}"
     session_ref = db.collection('users').document(uid).collection('study_sessions').document(hour_id)
+    # Get existing session to add to current duration
+    existing_session = session_ref.get()
+    current_duration = 0
+    if existing_session.exists:
+        current_duration = existing_session.to_dict().get('duration_seconds', 0)
+    
     session_data = {
         'start_time': get_current_time_for_user(user_data),  # Use user's timezone
-        'duration_seconds': firestore.Increment(seconds),
+        'duration_seconds': current_duration + seconds,  # Store actual total duration
         'last_updated': now.isoformat()
     }
     if local_hour is not None:

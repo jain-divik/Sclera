@@ -1,81 +1,374 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-
 <head>
     <meta charset="UTF-8">
-    <title>Admin Settings | StudyOS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Settings | Sclera</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+        }
+        @media (max-width: 768px) {
+            .settings-grid {
+                padding: 1rem;
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
 
+        .island {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            padding: 1.75rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        @media (max-width: 480px) {
+            .island {
+                padding: 1.25rem;
+                border-radius: 1.25rem;
+            }
+        }
+        .island-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;
+        }
+        .island-title {
+            font-size: 1.1rem; font-weight: 700; margin: 0;
+            display: flex; align-items: center; gap: 0.5rem;
+            color: var(--text-primary);
+        }
+        .island-title .material-symbols-outlined { color: var(--accent); font-size: 1.3rem; }
+        @media (max-width: 480px) {
+            .island-title { font-size: 1rem; }
+        }
+
+        .info-row {
+            display: flex; justify-content: space-between; padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border); font-size: 0.9rem;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: var(--text-muted); font-weight: 500; }
+        .info-value { color: var(--text-primary); font-weight: 600; }
+
+        .class-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .class-row {
+            display: flex; justify-content: space-between;
+            padding: 0.6rem 0; border-bottom: 1px solid var(--border);
+        }
+        .class-row:last-child { border-bottom: none; }
+        .class-name { font-weight: 600; color: var(--text-primary); }
+        .class-students { font-size: 0.85rem; color: var(--text-muted); }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+            padding: 0.6rem 1.2rem; border-radius: 0.7rem; font-size: 0.85rem;
+            font-weight: 700; cursor: pointer; text-decoration: none; transition: all 0.2s;
+            border: none; font-family: inherit; min-width: 48px; min-height: 48px; /* touch target */
+        }
+        @media (max-width: 480px) {
+            .btn { width: 100%; }
+        }
+        .btn .material-symbols-outlined { font-size: 1rem; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-secondary {
+            background: var(--bg-tertiary); color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+        .checkbox-wrapper {
+            display: flex; align-items: center; gap: 1rem;
+            background: var(--bg-tertiary); border: 1px solid var(--border);
+            border-radius: 0.75rem; padding: 1rem;
+        }
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 1.4rem; height: 1.4rem; cursor: pointer;
+            accent-color: var(--accent);
+            min-width: 1.4rem;
+        }
+        .checkbox-wrapper label { cursor: pointer; font-weight: 500; font-size: 0.9rem; }
+
+        .invite-code-display {
+            font-family: 'Courier New', monospace; font-size: 1.6rem; font-weight: 800;
+            letter-spacing: 0.2em; text-align: center; padding: 1rem;
+            background: var(--bg-tertiary); border: 2px dashed var(--border);
+            border-radius: 0.75rem; color: var(--accent); margin: 1rem 0;
+            word-break: break-all;
+        }
+
+        .td-modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex;
+            align-items: center; justify-content: center; z-index: 10000;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+            padding: 1rem;
+        }
+        .td-modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .td-modal {
+            width: min(500px, 100%); background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 1.25rem; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .td-modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1.25rem; border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+        }
+        .td-modal-title { font-size: 1rem; font-weight: 800; margin: 0; }
+        .td-modal-close {
+            background: transparent; border: 1px solid var(--border); color: var(--text-primary);
+            width: 2rem; height: 2rem; border-radius: 0.5rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            min-width: 2rem; min-height: 2rem;
+        }
+        .td-modal-close:hover { background: var(--bg-tertiary); border-color: var(--accent); }
+        .td-modal-body { padding: 1.25rem; color: var(--text-primary); font-size: 0.95rem; }
+        .td-modal-footer {
+            padding: 1rem 1.25rem; border-top: 1px solid var(--border);
+            display: flex; justify-content: flex-end; gap: 0.5rem; background: var(--bg-secondary);
+            flex-wrap: wrap;
+        }
+        @media (max-width: 480px) {
+            .td-modal-footer .btn { width: 100%; }
+        }
+        .td-modal-select {
+            width: 100%; padding: 0.65rem; background: var(--bg-tertiary);
+            border: 1px solid var(--border); border-radius: 0.65rem;
+            color: var(--text-primary); font-family: inherit; margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        .td-modal-select:focus { outline: none; border-color: var(--accent); }
+
+        .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); opacity: 0.7; }
+    </style>
+</head>
 <body>
     <div class="dashboard-layout">
-{% include '_admin_topnav.html' %}
-        <main class="main-content">
-            <h1>Institution Settings</h1>
-            <p class="text-muted">Manage institution-wide configurations and permissions</p>
+        {% include '_admin_topnav.html' %}
+        <main class="main-content" style="margin-left:0;">
+            <div style="padding:2rem 2rem 1rem;">
+                <h1 style="font-size:2rem; font-weight:800; margin-bottom:0.25rem;">Institution Settings</h1>
+                <p style="opacity:0.7;">Manage institution configurations and permissions</p>
+            </div>
 
-            <div class="inst-grid">
+            <div class="settings-grid">
+                <!-- Institution Information -->
                 <div class="island">
-                    <h3>Institution Information</h3>
-                    <p><strong>Name:</strong> {{ institution.get('name', 'N/A') }}</p>
-                    <p><strong>ID:</strong> {{ institution_id }}</p>
-                    <p><strong>Plan:</strong> {{ institution.get('plan', 'Free') }}</p>
-                    <p><strong>Created:</strong> {{ institution.get('created_at', 'N/A') }}</p>
-                </div>
-
-                <div class="island">
-                    <h3>Invite Codes</h3>
-                    <p>Generate codes for students and teachers to join your institution.</p>
-                    <button id="genInviteBtn" class="btn-primary">Generate New Code</button>
-                </div>
-
-                <div class="island">
-                    <h3>Classes Overview</h3>
-                    <p>Total Classes: {{ classes|length }}</p>
-                    {% for cls in classes %}
-                    <div class="class-row">
-                        <span>{{ cls.get('name', cls.id) }}</span>
-                        <span class="text-muted">{{ cls.get('students', [])|length }} students</span>
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined">business</span>
+                            Institution Details
+                        </h3>
                     </div>
-                    {% endfor %}
+                    <div class="info-row">
+                        <span class="info-label">Name</span>
+                        <span class="info-value">{{ institution.get('name', 'N/A') }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">ID</span>
+                        <span class="info-value" style="font-family:monospace;">{{ institution_id }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Plan</span>
+                        <span class="info-value">{{ institution.get('plan', 'Free') }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Created</span>
+                        <span class="info-value">{{ institution.get('created_at', 'N/A')[:10] }}</span>
+                    </div>
                 </div>
 
+                <!-- Invite Codes -->
                 <div class="island">
-                    <h3>Teacher Management</h3>
-                    <p>Manage teacher accounts and permissions.</p>
-                    <a href="{{ url_for('institution_admin_create_teacher_invite') }}" class="btn btn-secondary">Generate Teacher Invite</a>
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined">vpn_key</span>
+                            Invite Codes
+                        </h3>
+                    </div>
+                    <p style="color:var(--text-muted); margin-bottom:1.5rem; font-size:0.9rem;">
+                        Generate codes for students and teachers to join your institution.
+                    </p>
+                    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="openInviteModal('student')">
+                            <span class="material-symbols-outlined">person_add</span>
+                            Student Invite
+                        </button>
+                        <button class="btn btn-secondary" onclick="openInviteModal('teacher')">
+                            <span class="material-symbols-outlined">person_add</span>
+                            Teacher Invite
+                        </button>
+                    </div>
                 </div>
 
-                <!-- NOTIFICATIONS ISLAND -->
+                <!-- Classes Overview -->
                 <div class="island">
-                    <h3>Notifications</h3>
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined">class</span>
+                            Classes Overview
+                        </h3>
+                        <span style="color:var(--text-muted);">{{ classes|length }} total</span>
+                    </div>
+                    {% if classes %}
+                    <div class="class-list">
+                        {% for cls in classes %}
+                        <div class="class-row">
+                            <span class="class-name">{{ cls.get('name', cls.id) }}</span>
+                            <span class="class-students">{{ cls.get('students', [])|length }} students</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <p>No classes have been created yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Teacher Management Quick Link -->
+                <div class="island">
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined">group</span>
+                            Teacher Management
+                        </h3>
+                    </div>
+                    <p style="color:var(--text-muted); margin-bottom:1.5rem;">
+                        Manage teacher accounts and permissions from the dashboard.
+                    </p>
+                    <a href="{{ url_for('institution_admin_dashboard') }}" class="btn btn-secondary">
+                        <span class="material-symbols-outlined">open_in_new</span>
+                        Go to Teacher Management
+                    </a>
+                </div>
+
+                <!-- Notifications (will be removed in Phase I) -->
+                <div class="island">
+                    <div class="island-header">
+                        <h3 class="island-title">
+                            <span class="material-symbols-outlined">notifications</span>
+                            Notification Preferences
+                        </h3>
+                    </div>
                     <form method="POST" action="{{ url_for('settings') }}">
                         <input type="hidden" name="action" value="general">
-
-                        <div class="form-group checkbox-group" style="display:flex;align-items:center;gap:12px;">
+                        <div class="checkbox-wrapper" style="margin-bottom:1rem;">
                             <input type="checkbox" name="email_notifications" id="email_notifications"
-                                {% if settings.get('email_notifications') %}checked{% endif %}
-                                style="width:18px;height:18px;cursor:pointer;">
-                            <label for="email_notifications" style="cursor:pointer;">
-                                Email Notifications
-                            </label>
+                                {% if settings.get('email_notifications') %}checked{% endif %}>
+                            <label for="email_notifications">Receive email updates about institution activity and student progress</label>
                         </div>
-                        <p class="form-hint" style="color:var(--text-muted);font-size:13px;margin-top:8px;">
-                            Receive email updates about institution activity and student progress
-                        </p>
-                        <button type="submit" class="btn btn-primary" style="margin-top:16px;">Save Notifications</button>
+                        <button type="submit" class="btn btn-primary">
+                            <span class="material-symbols-outlined">save</span>
+                            Save Preferences
+                        </button>
                     </form>
                 </div>
             </div>
         </main>
     </div>
 
-    <script>
-        document.getElementById('genInviteBtn').onclick = async () => {
-            const role = prompt("Role (student/teacher)?", "student");
-            if (!role) return;
-            const classId = prompt("Class ID (optional):", "");
+    <!-- Invite Generation Modal (unchanged, but with responsive footer buttons) -->
+    <div class="td-modal-overlay" id="inviteModal">
+        <div class="td-modal">
+            <div class="td-modal-header">
+                <h3 class="td-modal-title" id="inviteModalTitle">Generate Invite</h3>
+                <button class="td-modal-close" onclick="closeInviteModal()">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="td-modal-body">
+                <div id="inviteForm">
+                    <label style="font-weight:600; display:block; margin-bottom:0.5rem;">Role</label>
+                    <select class="td-modal-select" id="inviteRole" onchange="toggleClassSelect()">
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                    </select>
+                    <div id="classIdGroup" style="display:none;">
+                        <label style="font-weight:600; display:block; margin-bottom:0.5rem;">Class (optional)</label>
+                        <select class="td-modal-select" id="inviteClassId">
+                            <option value="">No specific class</option>
+                            {% for cls in classes %}
+                            <option value="{{ cls.id }}">{{ cls.get('name', cls.id) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div id="inviteResult" style="display:none;">
+                    <div class="invite-code-display" id="generatedCode"></div>
+                    <p style="text-align:center; color:var(--text-muted);">Share this code with the recipient.</p>
+                </div>
+            </div>
+            <div class="td-modal-footer" id="inviteModalFooter">
+                <button class="btn btn-secondary" onclick="closeInviteModal()">Cancel</button>
+                <button class="btn btn-primary" id="generateInviteBtn" onclick="generateInvite()">
+                    <span class="material-symbols-outlined">key</span>
+                    Generate Code
+                </button>
+                <button class="btn btn-primary" id="copyInviteBtn" style="display:none;" onclick="copyInviteCode()">
+                    <span class="material-symbols-outlined">content_copy</span>
+                    Copy Code
+                </button>
+            </div>
+        </div>
+    </div>
 
+    <script>
+    (function() {
+        const saved = localStorage.getItem('sclera-theme');
+        if (saved) document.documentElement.setAttribute('data-theme', saved);
+    })();
+
+    const inviteModal = document.getElementById('inviteModal');
+    const inviteForm = document.getElementById('inviteForm');
+    const inviteResult = document.getElementById('inviteResult');
+    const generatedCode = document.getElementById('generatedCode');
+    const generateInviteBtn = document.getElementById('generateInviteBtn');
+    const copyInviteBtn = document.getElementById('copyInviteBtn');
+    let lastGeneratedCode = '';
+
+    function openInviteModal(role) {
+        document.getElementById('inviteRole').value = role;
+        toggleClassSelect();
+        inviteForm.style.display = 'block';
+        inviteResult.style.display = 'none';
+        generateInviteBtn.style.display = 'inline-flex';
+        copyInviteBtn.style.display = 'none';
+        inviteModal.classList.add('open');
+        document.getElementById('inviteModalTitle').textContent = role === 'student' ? 'Generate Student Invite' : 'Generate Teacher Invite';
+    }
+
+    function closeInviteModal() {
+        inviteModal.classList.remove('open');
+    }
+
+    inviteModal.addEventListener('click', (e) => {
+        if (e.target === inviteModal) closeInviteModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeInviteModal();
+    });
+
+    function toggleClassSelect() {
+        const role = document.getElementById('inviteRole').value;
+        document.getElementById('classIdGroup').style.display = role === 'student' ? 'block' : 'none';
+    }
+
+    async function generateInvite() {
+        const role = document.getElementById('inviteRole').value;
+        const classId = document.getElementById('inviteClassId')?.value || '';
+
+        generateInviteBtn.disabled = true;
+        generateInviteBtn.innerHTML = '<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">refresh</span> Generating...';
+
+        try {
             const formData = new FormData();
             formData.append('role', role);
             if (classId) formData.append('class_id', classId);
@@ -85,9 +378,33 @@
                 body: formData
             });
             const data = await res.json();
-            alert("Invite Code: " + data.code);
-        };
+            if (data.code) {
+                lastGeneratedCode = data.code;
+                generatedCode.textContent = data.code;
+                inviteForm.style.display = 'none';
+                inviteResult.style.display = 'block';
+                generateInviteBtn.style.display = 'none';
+                copyInviteBtn.style.display = 'inline-flex';
+            } else {
+                alert('Failed to generate code. Please try again.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Network error. Please try again.');
+        } finally {
+            generateInviteBtn.disabled = false;
+            generateInviteBtn.innerHTML = '<span class="material-symbols-outlined">key</span> Generate Code';
+        }
+    }
+
+    function copyInviteCode() {
+        navigator.clipboard.writeText(lastGeneratedCode).then(() => {
+            copyInviteBtn.innerHTML = '<span class="material-symbols-outlined">check</span> Copied!';
+            setTimeout(() => {
+                copyInviteBtn.innerHTML = '<span class="material-symbols-outlined">content_copy</span> Copy Code';
+            }, 2000);
+        });
+    }
     </script>
 </body>
-
 </html>
