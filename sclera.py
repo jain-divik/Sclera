@@ -3897,7 +3897,9 @@ def tasks_dashboard():
             flash(f"An error occurred: {str(e)}", 'error')
         # Redirect back to the referrer or a default page
         referrer = request.referrer or ''
-        if 'tasks' in referrer or 'dashboard' in referrer:
+        if 'academic' in referrer:
+            return redirect(url_for('academic_dashboard'))
+        elif 'tasks' in referrer:
             return redirect(referrer)
         return redirect(url_for('profile_dashboard'))
     # GET: Render tasks dashboard
