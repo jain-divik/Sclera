@@ -1,27 +1,53 @@
 """
-AI Assistant module for StudyOS
+
+AI Assistant module for Sclera
 Simplified implementation with flat database structure
+
 """
+
+'''----------------Imports----------------'''
 import os
 import json
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 from config import config
 from utils.logger import logger
-# Import will be done in __init__ to handle errors gracefully
-# Remove global Firebase client - will be initialized when needed
+
+# Import rate limiter for quota management
+try:
+    from gemini_analytics import rate_limiter
+    RATE_LIMITER_AVAILABLE = True
+except ImportError:
+    RATE_LIMITER_AVAILABLE = False
+    logger.warning("Rate limiter not available from gemini_analytics, AI assistant will use basic rate limiting")
 
 class AIAssistant:
     """Simplified AI Assistant class with flat database structure"""
 
     def __init__(self):
-        """Initialize AI Assistant with Gemini API"""
+        """
+        Initialising the Gemini Model(s) that will be used for AI analytics.
+
+        First, we define variables that will be used to store model information.
+
+        Then, we check is the GEMINI_API_KEY environment variable is defined or not. If its not, we throw an error message and log the error with utils (logger) while also printing the error in the console.
+
+        Then, we configure the googlegenai package for further use. We assign our API key to the genai package before continuing.
+
+        After that, upon this initialisation, we check for and list all working models that Google offers. After doing so, we provide a list of model names (hardcoded) in a preferential order for rate bunking.
+
+        Furthermore, we filter our list to include only the models that we recieve from the available models listing call in the previous step.
+
+        
+        """
         self.ai_available = False
         self.model = None
         self.genai = None
         self.error_message = None
         self.model_name = None
         self.available_models = []  # Store available models for dynamic switching
+        self.free_tier_quota_exhausted = False  # Track if free tier quota is exhausted
+        self.exhausted_models = set()  # Track models that have hit quota limits
         
         try:
             # Check if API key is set
@@ -80,26 +106,18 @@ class AIAssistant:
                 self.error_message = f"Failed to configure Gemini API: {str(e)}"
                 logger.error(self.error_message, exc_info=True)
                 print(f"AI CONFIG ERROR: {self.error_message}")
-                return  # Properly return None from __init__
-            
-            # Define the models to try in order of preference
-            # Prioritize working free models from the available list
-            # model_names = [
-            #     'models/gemini-flash-latest',  # Working model, put first
-            #     'models/gemini-flash-lite-latest',  # Latest flash lite
-            #     'models/gemini-2.5-flash-lite',  # Free tier (20 requests/day)
-            #     'models/gemini-2.0-flash-lite',  # Free tier model
-            #     'models/gemini-2.0-flash-lite-001',  # Free tier variant
-            #     'models/gemini-2.5-flash-lite-preview-09-2025',  # Preview version
-            #     'models/gemma-3-1b-it',  # Gemma model (free)
-            #     'models/gemma-3-4b-it',  # Gemma model (free)
-            #     'models/gemma-3n-e4b-it',  # Gemma model (free)
-            #     'models/gemma-3n-e2b-it',  # Gemma model (free)
-            #     'models/gemini-2.5-flash',  # Backup if quota allows
-            #     'models/gemini-2.5-pro'  # Last resort (often no free quota)
-            # ]
+                return  
 
             model_names = [
+                    # Paid/Pro tier models first (for when free tier quota is exhausted)
+                    'models/gemini-2.5-pro',  # Pro tier
+                    'models/gemini-3.1-pro-preview',  # Pro tier
+                    'models/gemini-3-pro-preview',  # Pro tier
+                    'models/gemini-pro-latest',  # Pro tier
+                    'models/gemini-2.5-flash',  # Higher tier flash
+                    'models/gemini-3-flash-preview',  # Higher tier flash
+                    'models/gemini-flash-latest',  # Latest flash
+                    # Free tier models (use these first, skip when quota exhausted)
                     'models/gemini-2.0-flash-lite',  # Free tier friendly
                     'models/gemini-2.0-flash-lite-001',  # Free tier friendly
                     'models/gemini-2.5-flash-lite',  # Free tier friendly
@@ -108,21 +126,17 @@ class AIAssistant:
                     'models/gemma-3-12b-it',  # Free model
                     'models/gemma-3-4b-it',  # Free model
                     'models/gemma-3-1b-it',  # Free model
-                    'models/gemini-2.0-flash',  # Backup
-                    'models/gemini-2.0-flash-001',  # Backup
-                    'models/gemini-2.5-flash',  # Higher tier
-                    'models/gemini-3-flash-preview',  # Higher tier
-                    'models/gemini-2.5-pro',  # Pro tier (last resort)
-                    'models/gemini-3.1-pro-preview',  # Pro tier (last resort)
-                    'models/gemini-3-pro-preview',  # Pro tier (last resort)
-                    'models/gemini-pro-latest',  # Pro tier (last resort)
-                    'models/gemini-flash-latest',  # Pro tier (last resort)
-                    'models/gemini-flash-lite-latest',  # Pro tier (last resort)
-                    'models/deep-research-pro-preview-12-2025',  # Specialized
-                    'models/gemini-2.5-computer-use-preview-10-2025',  # Specialized
                     'models/gemma-3n-e4b-it',  # Free nano models
                     'models/gemma-3n-e2b-it',  # Free nano models
+                    'models/gemini-flash-lite-latest',  # Free tier latest
+                    # Backup models
+                    'models/gemini-2.0-flash',  # Backup
+                    'models/gemini-2.0-flash-001',  # Backup
+                    # Specialized models
+                    'models/deep-research-pro-preview-12-2025',  # Specialized
+                    'models/gemini-2.5-computer-use-preview-10-2025',  # Specialized
                     'models/nano-banana-pro-preview',  # Specialized
+                    # Embedding and Q&A models (not for generation)
                     'models/gemini-embedding-2-preview',  # Embedding models
                     'models/gemini-embedding-001',  # Embedding models
                     'models/aqa'  # Q&A model
@@ -652,6 +666,10 @@ class AIAssistant:
             logger.error(error_msg)
             return "I'm sorry, but the AI Assistant is currently unavailable. Please try again later."
         
+        # Apply rate limiting if available
+        if RATE_LIMITER_AVAILABLE:
+            rate_limiter.wait_if_needed(model_name=self.model_name)
+        
         # Create a prompt with context
         prompt = self._build_planning_prompt(message, context)
         
@@ -660,6 +678,9 @@ class AIAssistant:
             response = self.model.generate_content(prompt)
             if hasattr(response, 'text') and response.text.strip():
                 response_text = response.text.strip()
+                # Reset cooldown on successful call
+                if RATE_LIMITER_AVAILABLE:
+                    rate_limiter.reset_cooldown()
                 # Debug: AI planning response completed
                 logger.info(f"✅ AI ANALYSIS COMPLETED: Planning Assistant generated response for {user_name}")
                 logger.info(f"📏 RESPONSE LENGTH: {len(response_text)} characters")
@@ -677,18 +698,32 @@ class AIAssistant:
             if "quota" in error_msg.lower() or "429" in error_msg or "limit" in error_msg.lower():
                 logger.warning(f"Quota exceeded for {self.model_name}, attempting to switch models")
                 
-                # Try to switch to next available model
-                if self._switch_to_next_model():
+                # Trigger quota cooldown if rate limiter is available
+                if RATE_LIMITER_AVAILABLE:
+                    rate_limiter.trigger_quota_cooldown(duration_seconds=300)
+                
+                # Mark current model as exhausted
+                if self.model_name:
+                    self.exhausted_models.add(self.model_name)
+                
+                # Try to switch to next available model with quota error flag
+                if self._switch_to_next_model(quota_error=True):
                     logger.info(f"Switched to model: {self.model_name}")
                     try:
                         response = self.model.generate_content(prompt)
                         if hasattr(response, 'text') and response.text.strip():
+                            # Reset cooldown on successful call
+                            if RATE_LIMITER_AVAILABLE:
+                                rate_limiter.reset_cooldown()
                             return response.text.strip()
                         else:
                             logger.warning("Received empty response from new model")
                             return "I didn't receive a valid response from the new model. Could you please rephrase your question?"
                     except Exception as retry_e:
                         logger.error(f"Error with new model {self.model_name}: {str(retry_e)}")
+                        # Mark new model as exhausted too
+                        if self.model_name:
+                            self.exhausted_models.add(self.model_name)
                         # If switching fails, try fallback
                         return self._generate_smart_planning_fallback(message, context)
                 else:
@@ -717,6 +752,10 @@ class AIAssistant:
             logger.error(error_msg)
             return "I'm sorry, but the AI Assistant is currently unavailable. Please try again later."
         
+        # Apply rate limiting if available
+        if RATE_LIMITER_AVAILABLE:
+            rate_limiter.wait_if_needed(model_name=self.model_name)
+        
         # Create a prompt with context
         prompt = self._build_doubt_prompt(message, context)
         
@@ -725,6 +764,9 @@ class AIAssistant:
             response = self.model.generate_content(prompt)
             if hasattr(response, 'text') and response.text.strip():
                 response_text = response.text.strip()
+                # Reset cooldown on successful call
+                if RATE_LIMITER_AVAILABLE:
+                    rate_limiter.reset_cooldown()
                 # Debug: AI doubt response completed
                 logger.info(f"✅ AI ANALYSIS COMPLETED: Doubt Resolution Assistant generated response for {user_name}")
                 logger.info(f"📏 RESPONSE LENGTH: {len(response_text)} characters")
@@ -742,18 +784,32 @@ class AIAssistant:
             if "quota" in error_msg.lower() or "429" in error_msg or "limit" in error_msg.lower():
                 logger.warning(f"Quota exceeded for {self.model_name}, attempting to switch models")
                 
-                # Try to switch to next available model
-                if self._switch_to_next_model():
+                # Trigger quota cooldown if rate limiter is available
+                if RATE_LIMITER_AVAILABLE:
+                    rate_limiter.trigger_quota_cooldown(duration_seconds=300)
+                
+                # Mark current model as exhausted
+                if self.model_name:
+                    self.exhausted_models.add(self.model_name)
+                
+                # Try to switch to next available model with quota error flag
+                if self._switch_to_next_model(quota_error=True):
                     logger.info(f"Switched to model: {self.model_name}")
                     try:
                         response = self.model.generate_content(prompt)
                         if hasattr(response, 'text') and response.text.strip():
+                            # Reset cooldown on successful call
+                            if RATE_LIMITER_AVAILABLE:
+                                rate_limiter.reset_cooldown()
                             return response.text.strip()
                         else:
                             logger.warning("Received empty response from new model")
                             return "I didn't receive a valid response from the new model. Could you please rephrase your question?"
                     except Exception as retry_e:
                         logger.error(f"Error with new model {self.model_name}: {str(retry_e)}")
+                        # Mark new model as exhausted too
+                        if self.model_name:
+                            self.exhausted_models.add(self.model_name)
                         # If switching fails, try fallback
                         return self._generate_smart_doubt_fallback(message, context)
                 else:
@@ -767,14 +823,30 @@ class AIAssistant:
                     "Please try again later or contact support if the problem persists."
                 )
 
-    def _switch_to_next_model(self) -> bool:
-        """Switch to the next available model when quota is exceeded"""
+    def _is_free_tier_model(self, model_name: str) -> bool:
+        """Check if a model is a free tier model"""
+        free_tier_keywords = ['flash-lite', 'gemma-3', 'gemma-3n', 'embedding', 'aqa']
+        return any(keyword in model_name.lower() for keyword in free_tier_keywords)
+    
+    def _switch_to_next_model(self, quota_error: bool = False) -> bool:
+        """Switch to the next available model when quota is exceeded
+        
+        Args:
+            quota_error: If True, skip all free tier models and jump to paid tier
+        """
         if not hasattr(self, 'available_models') or not self.available_models:
             logger.warning("No available models list found")
             return False
         
+        # If this is a quota error, mark free tier as exhausted
+        if quota_error:
+            self.free_tier_quota_exhausted = True
+            logger.warning("Free tier quota exhausted, will skip to paid tier models")
+        
         logger.info(f"Available models: {self.available_models}")
         logger.info(f"Current model: {self.model_name}")
+        logger.info(f"Free tier quota exhausted: {self.free_tier_quota_exhausted}")
+        logger.info(f"Exhausted models: {self.exhausted_models}")
         
         # Find current model index
         try:
@@ -784,9 +856,23 @@ class AIAssistant:
             current_index = -1
             logger.info(f"Current model not found in list, starting from beginning")
         
-        # Try models after current one
-        for i in range(current_index + 1, len(self.available_models)):
+        # If free tier quota is exhausted, start from the beginning (paid tier models)
+        start_index = 0 if self.free_tier_quota_exhausted else current_index + 1
+        
+        # Try models after current one (or from start if quota exhausted)
+        for i in range(start_index, len(self.available_models)):
             model_name = self.available_models[i]
+            
+            # Skip if this model is already exhausted
+            if model_name in self.exhausted_models:
+                logger.info(f"Skipping exhausted model: {model_name}")
+                continue
+            
+            # If free tier quota is exhausted, skip free tier models
+            if self.free_tier_quota_exhausted and self._is_free_tier_model(model_name):
+                logger.info(f"Skipping free tier model (quota exhausted): {model_name}")
+                continue
+            
             logger.info(f"Trying model {i+1}/{len(self.available_models)}: {model_name}")
             
             try:
@@ -807,7 +893,17 @@ class AIAssistant:
             except Exception as e:
                 error_msg = str(e)
                 logger.warning(f"Failed to switch to {model_name}: {error_msg}")
-                # Always continue to next model, regardless of error type
+                
+                # Mark this model as exhausted if it's a quota error
+                if "quota" in error_msg.lower() or "429" in error_msg:
+                    self.exhausted_models.add(model_name)
+                    logger.warning(f"Marked model as exhausted due to quota: {model_name}")
+                    
+                    # If this is a free tier model, mark all free tier as exhausted
+                    if self._is_free_tier_model(model_name):
+                        self.free_tier_quota_exhausted = True
+                        logger.warning("Free tier quota exhausted, will skip to paid tier models")
+                
                 continue
         
         logger.warning("No working models available")

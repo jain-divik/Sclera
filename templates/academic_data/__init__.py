@@ -5,7 +5,7 @@ from .highschool.hs_cbse_8 import HS_CBSE_8_DATA
 from .highschool.hs_icse_8 import HS_ICSE_8_DATA
 from .highschool.hs_ib_8 import HS_IB_8_DATA
 from .highschool.hs_igcse_8 import HS_IGCSE_8_DATA
-from .highschool.hs_cbse_9 import HS_CBSE_9_DATA
+from .highschool.cbse_9 import CBSE_9_DATA as HS_CBSE_9_DATA
 from .highschool.hs_icse_9 import HS_ICSE_9_DATA
 from .highschool.hs_ib_9 import HS_IB_9_DATA
 from .highschool.hs_igcse_9 import HS_IGCSE_9_DATA
@@ -31,7 +31,7 @@ ACADEMIC_SYLLABI = {
     'highschool': {
         'CBSE': {
             '8': HS_CBSE_8_DATA,
-            '9': HS_CBSE_9_DATA,
+            '9': HS_CBSE_9_DATA,  # now sourced from cbse_9.py (CBSE_9_DATA)
             '10': HS_CBSE_10_DATA,
             '11_PCM': CBSE_11_PCM_DATA,
             '11_PCB': CBSE_11_PCB_DATA,

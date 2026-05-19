@@ -13,32 +13,111 @@ import logging
 
 # Import existing modules
 from firebase_config import db
+from firebase_admin import firestore
 from utils.logger import logger
 from utils.cache import cached, CacheManager
 from templates.academic_data import get_syllabus
 
-# Simple rate limiter to prevent too many concurrent API calls
+# Enhanced rate limiter to prevent too many concurrent API calls
 class RateLimiter:
-    def __init__(self, max_calls_per_minute: int = 10):
-        self.max_calls = max_calls_per_minute
-        self.calls = []
+    def __init__(self, max_calls_per_minute: int = 3, max_calls_per_hour: int = 50):
+        self.max_calls_per_minute = max_calls_per_minute
+        self.max_calls_per_hour = max_calls_per_hour
+        self.calls_minute = []  # Track calls in last minute
+        self.calls_hour = []  # Track calls in last hour
         self.lock = threading.Lock()
+        self.quota_cooldown_until = 0  # Timestamp until which we're in cooldown
+        self.quota_hit_count = 0  # Track how many times we've hit quota
     
-    def wait_if_needed(self):
+    def wait_if_needed(self, model_name: str = None):
+        """Wait if rate limit is reached or if in quota cooldown
+        
+        Args:
+            model_name: Optional model name for per-model tracking
+        """
         with self.lock:
             now = time.time()
-            # Remove calls older than 1 minute
-            self.calls = [call_time for call_time in self.calls if now - call_time < 60]
             
-            if len(self.calls) >= self.max_calls:
+            # Check if we're in quota cooldown
+            if now < self.quota_cooldown_until:
+                wait_time = self.quota_cooldown_until - now
+                logger.warning(f"In quota cooldown, waiting {wait_time:.1f}s before retrying")
+                time.sleep(wait_time)
+                now = time.time()
+            
+            # Remove calls older than 1 minute
+            self.calls_minute = [call_time for call_time in self.calls_minute if now - call_time < 60]
+            
+            # Remove calls older than 1 hour
+            self.calls_hour = [call_time for call_time in self.calls_hour if now - call_time < 3600]
+            
+            # Check minute limit
+            if len(self.calls_minute) >= self.max_calls_per_minute:
                 # Calculate how long to wait
-                oldest_call = min(self.calls)
+                oldest_call = min(self.calls_minute)
                 wait_time = 60 - (now - oldest_call)
                 if wait_time > 0:
-                    logger.info(f"Rate limit reached, waiting {wait_time:.1f}s")
+                    logger.info(f"Minute rate limit reached ({self.max_calls_per_minute}/min), waiting {wait_time:.1f}s")
                     time.sleep(wait_time)
+                    now = time.time()
+                    # Refresh calls after waiting
+                    self.calls_minute = [call_time for call_time in self.calls_minute if now - call_time < 60]
             
-            self.calls.append(now)
+            # Check hour limit
+            if len(self.calls_hour) >= self.max_calls_per_hour:
+                # Calculate how long to wait
+                oldest_call = min(self.calls_hour)
+                wait_time = 3600 - (now - oldest_call)
+                if wait_time > 0:
+                    logger.warning(f"Hour rate limit reached ({self.max_calls_per_hour}/hour), waiting {wait_time:.1f}s")
+                    time.sleep(wait_time)
+                    now = time.time()
+                    # Refresh calls after waiting
+                    self.calls_hour = [call_time for call_time in self.calls_hour if now - call_time < 3600]
+            
+            # Record this call
+            self.calls_minute.append(now)
+            self.calls_hour.append(now)
+            
+            if model_name:
+                logger.debug(f"Rate limiter: Call allowed for {model_name} (minute: {len(self.calls_minute)}/{self.max_calls_per_minute}, hour: {len(self.calls_hour)}/{self.max_calls_per_hour})")
+    
+    def trigger_quota_cooldown(self, duration_seconds: int = 300):
+        """Trigger a cooldown period after hitting quota
+        
+        Args:
+            duration_seconds: How long to wait before allowing calls again
+        """
+        with self.lock:
+            self.quota_cooldown_until = time.time() + duration_seconds
+            self.quota_hit_count += 1
+            logger.warning(f"Quota cooldown triggered for {duration_seconds}s (hit count: {self.quota_hit_count})")
+            
+            # Increase cooldown duration with repeated quota hits
+            if self.quota_hit_count > 1:
+                # Exponential backoff: 5min, 10min, 20min, 40min, max 1 hour
+                extended_duration = min(3600, 300 * (2 ** (self.quota_hit_count - 1)))
+                self.quota_cooldown_until = time.time() + extended_duration
+                logger.warning(f"Extended quota cooldown to {extended_duration}s due to repeated quota hits")
+    
+    def reset_cooldown(self):
+        """Reset the quota cooldown (call after successful API call)"""
+        with self.lock:
+            if self.quota_cooldown_until > time.time():
+                logger.info("Quota cooldown reset after successful call")
+            self.quota_cooldown_until = 0
+    
+    def get_stats(self):
+        """Get current rate limiter statistics"""
+        with self.lock:
+            now = time.time()
+            return {
+                'calls_per_minute': len([t for t in self.calls_minute if now - t < 60]),
+                'calls_per_hour': len([t for t in self.calls_hour if now - t < 3600]),
+                'quota_hit_count': self.quota_hit_count,
+                'in_cooldown': now < self.quota_cooldown_until,
+                'cooldown_remaining': max(0, self.quota_cooldown_until - now)
+            }
 
 # Circuit breaker to prevent repeated failures
 class CircuitBreaker:
@@ -78,7 +157,8 @@ class CircuitBreaker:
                 raise e
 
 # Global rate limiter and circuit breaker
-rate_limiter = RateLimiter(max_calls_per_minute=8)  # Conservative limit
+# Reduced to 3 calls/minute for free tier compatibility
+rate_limiter = RateLimiter(max_calls_per_minute=3, max_calls_per_hour=50)  # Very conservative for free tier
 circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=300)  # 5 min recovery
 
 
@@ -200,7 +280,9 @@ class GeminiAnalytics:
                 'study_sessions': study_sessions,
                 'chapter_completion': chapter_completion,
                 'exam_trends': exam_trends,
-                'heatmap_patterns': self._get_heatmap_patterns(uid)
+                'heatmap_patterns': self._get_heatmap_patterns(uid),
+                'quiz_tests': self._get_quiz_test_features(uid),
+                'topic_mastery': self._get_topic_mastery_features(uid)
             }
             
             return features
@@ -450,6 +532,184 @@ class GeminiAnalytics:
             logger.error(f"Error getting exam trend features: {str(e)}")
             return {'recent_scores': [], 'avg_score': 0, 'momentum': 0, 'score_trend': 'error'}
     
+    def _get_quiz_test_features(self, uid: str) -> Dict[str, Any]:
+        """Analyze quiz and test attempt performance"""
+        try:
+            attempts_ref = db.collection('users').document(uid).collection('quiz_attempts') \
+                .order_by('completed_at', direction=firestore.Query.DESCENDING).stream()
+
+            all_attempts = []
+            for doc in attempts_ref:
+                a = doc.to_dict()
+                if a.get('score') is not None:
+                    all_attempts.append(a)
+
+            if not all_attempts:
+                return {
+                    'total_attempts': 0,
+                    'avg_score': 0,
+                    'recent_scores': [],
+                    'quiz_momentum': 0,
+                    'score_by_subject': {},
+                    'quiz_vs_mock': {'quiz_avg': 0, 'mock_avg': 0},
+                    'total_questions_answered': 0,
+                    'overall_quiz_accuracy': 0,
+                    'last_quiz_date': None
+                }
+
+            total_attempts = len(all_attempts)
+            all_scores = [a['score'] for a in all_attempts]
+            avg_score = round(sum(all_scores) / len(all_scores), 1)
+
+            recent_8 = all_attempts[:8]
+            recent_scores = [round(a['score'], 1) for a in recent_8]
+
+            quiz_momentum = 0
+            if len(recent_8) >= 4:
+                last_4_avg = sum(a['score'] for a in recent_8[:4]) / 4
+                prev_4_avg = sum(a['score'] for a in recent_8[4:]) / len(recent_8[4:])
+                quiz_momentum = round(last_4_avg - prev_4_avg, 1)
+
+            subject_scores: Dict[str, list] = {}
+            for a in all_attempts:
+                subj = a.get('subject') or a.get('topic_id', '').split('_')[2] if a.get('topic_id') else 'unknown'
+                if subj not in subject_scores:
+                    subject_scores[subj] = []
+                subject_scores[subj].append(a['score'])
+            score_by_subject = {k: round(sum(v) / len(v), 1) for k, v in subject_scores.items()}
+
+            quiz_scores = [a['score'] for a in all_attempts if (a.get('mode') or '').startswith('topic')]
+            mock_scores = [a['score'] for a in all_attempts if 'mock' in (a.get('mode') or '').lower()]
+            quiz_vs_mock = {
+                'quiz_avg': round(sum(quiz_scores) / len(quiz_scores), 1) if quiz_scores else 0,
+                'mock_avg': round(sum(mock_scores) / len(mock_scores), 1) if mock_scores else 0
+            }
+
+            total_correct = sum(a.get('correct_count', 0) for a in all_attempts)
+            total_submitted = sum(a.get('submitted_count', 0) for a in all_attempts)
+            overall_accuracy = round((total_correct / total_submitted * 100), 1) if total_submitted > 0 else 0
+
+            last_quiz_date = None
+            if all_attempts and all_attempts[0].get('completed_at'):
+                try:
+                    ct = all_attempts[0]['completed_at']
+                    last_quiz_date = ct.isoformat() if hasattr(ct, 'isoformat') else str(ct)
+                except:
+                    pass
+
+            return {
+                'total_attempts': total_attempts,
+                'avg_score': avg_score,
+                'recent_scores': recent_scores,
+                'quiz_momentum': quiz_momentum,
+                'score_by_subject': score_by_subject,
+                'quiz_vs_mock': quiz_vs_mock,
+                'total_questions_answered': total_submitted,
+                'overall_quiz_accuracy': overall_accuracy,
+                'last_quiz_date': last_quiz_date
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting quiz test features for {uid}: {str(e)}")
+            return {
+                'total_attempts': 0, 'avg_score': 0, 'recent_scores': [],
+                'quiz_momentum': 0, 'score_by_subject': {}, 'quiz_vs_mock': {'quiz_avg': 0, 'mock_avg': 0},
+                'total_questions_answered': 0, 'overall_quiz_accuracy': 0, 'last_quiz_date': None
+            }
+
+    def _get_topic_mastery_features(self, uid: str) -> Dict[str, Any]:
+        """Analyze per-topic mastery from topic_performance subcollection"""
+        try:
+            perf_ref = db.collection('users').document(uid).collection('topic_performance').stream()
+
+            topics_data = {}
+            for doc in perf_ref:
+                topics_data[doc.id] = doc.to_dict()
+
+            if not topics_data:
+                return {
+                    'total_topics_practiced': 0,
+                    'confidence_breakdown': {'confident': 0, 'practiced': 0, 'not_started': 0},
+                    'avg_accuracy': 0,
+                    'weak_topics': [],
+                    'strong_topics': [],
+                    'subjects_summary': {}
+                }
+
+            confident = sum(1 for t in topics_data.values() if t.get('confidence') == 'confident')
+            practiced = sum(1 for t in topics_data.values() if t.get('confidence') == 'practiced')
+            not_started = sum(1 for t in topics_data.values() if t.get('confidence') == 'not_started')
+
+            accuracies = [t.get('accuracy', 0) * 100 for t in topics_data.values() if t.get('total_attempted', 0) > 0]
+            avg_accuracy = round(sum(accuracies) / len(accuracies), 1) if accuracies else 0
+
+            weak_topics = []
+            strong_topics = []
+            subjects_map: Dict[str, list] = {}
+
+            for topic_id, tdata in topics_data.items():
+                accuracy = tdata.get('accuracy', 0) * 100
+                attempted = tdata.get('total_attempted', 0)
+                if attempted == 0:
+                    continue
+
+                parts = topic_id.split('_')
+                subject = parts[2] if len(parts) >= 3 else 'unknown'
+                chapter = parts[3] if len(parts) >= 4 else ''
+                topic_name = parts[4] if len(parts) >= 5 else ''
+
+                topic_info = {
+                    'topic_id': topic_id,
+                    'accuracy': round(accuracy, 1),
+                    'total_attempted': attempted,
+                    'chapter': chapter,
+                    'topic_name': topic_name
+                }
+
+                if accuracy < 50:
+                    weak_topics.append(topic_info)
+                elif accuracy >= 80:
+                    strong_topics.append(topic_info)
+
+                if subject not in subjects_map:
+                    subjects_map[subject] = []
+                subjects_map[subject].append(topic_info)
+
+            subjects_summary = {}
+            for subj, topic_list in subjects_map.items():
+                subj_accuracies = [t['accuracy'] for t in topic_list]
+                subjects_summary[subj] = {
+                    'topics_practiced': len(topic_list),
+                    'avg_accuracy': round(sum(subj_accuracies) / len(subj_accuracies), 1),
+                    'weak_count': sum(1 for t in topic_list if t['accuracy'] < 50),
+                    'strong_count': sum(1 for t in topic_list if t['accuracy'] >= 80)
+                }
+
+            weak_topics.sort(key=lambda x: x['accuracy'])
+            strong_topics.sort(key=lambda x: x['accuracy'], reverse=True)
+
+            return {
+                'total_topics_practiced': len(topics_data),
+                'confidence_breakdown': {
+                    'confident': confident,
+                    'practiced': practiced,
+                    'not_started': not_started
+                },
+                'avg_accuracy': avg_accuracy,
+                'weak_topics': weak_topics[:5],
+                'strong_topics': strong_topics[:5],
+                'subjects_summary': subjects_summary
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting topic mastery features for {uid}: {str(e)}")
+            return {
+                'total_topics_practiced': 0,
+                'confidence_breakdown': {'confident': 0, 'practiced': 0, 'not_started': 0},
+                'avg_accuracy': 0, 'weak_topics': [], 'strong_topics': [],
+                'subjects_summary': {}
+            }
+
     def _get_heatmap_patterns(self, uid: str) -> Dict[str, Any]:
         """Extract study pattern from heatmap data"""
         try:
@@ -556,11 +816,16 @@ You are an academic readiness expert. Based on the following student data, calcu
 Student Data:
 {json.dumps(features, indent=2)}
 
-Consider:
-- Overall academic progress and completion rates
-- Recent performance trends and momentum
+Consider ALL of the following:
+- Overall academic progress and chapter completion rates
+- Recent exam performance trends and momentum
+- Quiz/test performance: volume of attempts, average scores, momentum, and accuracy
+- Topic-level mastery: confident vs weak topics, subject-wise accuracy
 - Study consistency and patterns
 - Subject-specific strengths and weaknesses
+- Gap between exam scores and quiz scores (exam pressure vs practice comfort)
+- Practice coverage breadth (how many topics have been attempted vs total syllabus)
+- Ratio of strong topics to weak topics
 
 Return a JSON response with:
 {{
@@ -571,7 +836,7 @@ Return a JSON response with:
   "subject_insights": {{"subject": "Physics", "status": "strong/average/weak", "focus": "specific topic"}}
 }}
 
-Be encouraging but realistic. The score should reflect true preparedness.
+Be encouraging but realistic. The score should reflect true preparedness based on both exam performance AND quiz/topic-level practice data.
 """
     
     def clustering_prompt(self, class_students_data: List[Dict[str, Any]]) -> str:
@@ -579,12 +844,14 @@ Be encouraging but realistic. The score should reflect true preparedness.
         # Summarize each student for the prompt
         student_summaries = []
         for student in class_students_data:
+            quiz_data = student.get('quiz_tests', {})
+            topic_data = student.get('topic_mastery', {})
             summary = {
                 'uid': student['uid'],
                 'name': student['name'],
                 'study_pattern': student.get('heatmap_patterns', {}).get('study_pattern', 'unknown'),
                 'consistency_score': student.get('heatmap_patterns', {}).get('consistency_score', 0),
-                'peak_times': student.get('heatmap_patterns', {}).get('peak_times', [])[:2],  # Top 2 times
+                'peak_times': student.get('heatmap_patterns', {}).get('peak_times', [])[:2],
                 'session_frequency': student.get('study_sessions', {}).get('session_count_30d', 0),
                 'total_study_time': student.get('study_sessions', {}).get('total_duration_30d', 0),
                 'chapter_completion': student.get('chapter_completion', {}).get('overall_completion', 0),
@@ -592,7 +859,14 @@ Be encouraging but realistic. The score should reflect true preparedness.
                 'total_chapters': student.get('chapter_completion', {}).get('total_chapters', 0),
                 'avg_exam_score': student.get('exam_trends', {}).get('avg_score', 0),
                 'exam_trend': student.get('exam_trends', {}).get('score_trend', 'no_data'),
-                'recent_exam_count': len(student.get('exam_trends', {}).get('recent_scores', []))
+                'recent_exam_count': len(student.get('exam_trends', {}).get('recent_scores', [])),
+                'total_quiz_attempts': quiz_data.get('total_attempts', 0),
+                'avg_quiz_score': quiz_data.get('avg_score', 0),
+                'quiz_momentum': quiz_data.get('quiz_momentum', 0),
+                'total_topics_practiced': topic_data.get('total_topics_practiced', 0),
+                'topics_confident': topic_data.get('confidence_breakdown', {}).get('confident', 0),
+                'topics_weak': topic_data.get('confidence_breakdown', {}).get('not_started', 0),
+                'topic_mastery_accuracy': topic_data.get('avg_accuracy', 0)
             }
             student_summaries.append(summary)
         
@@ -633,8 +907,15 @@ Create 3-5 meaningful clusters that capture the main study patterns in the class
             return None
         
         def _make_api_call():
+            # Try to get a working model first for rate limiter tracking
+            model = self._get_working_model()
+            if not model:
+                raise Exception("No working AI models available")
+            
+            model_name = getattr(model, '_model_name', 'unknown')
+            
             # Wait if we've made too many calls recently
-            rate_limiter.wait_if_needed()
+            rate_limiter.wait_if_needed(model_name=model_name)
             
             for attempt in range(retries):
                 try:
@@ -642,16 +923,14 @@ Create 3-5 meaningful clusters that capture the main study patterns in the class
                     if attempt == 0:
                         time.sleep(0.5)
                     
-                    # Try to get a working model
-                    model = self._get_working_model()
-                    if not model:
-                        raise Exception("No working AI models available")
-                    
                     # Use the model to call Gemini
                     chat = model.start_chat(history=[])
                     response = chat.send_message(prompt, stream=False)
                     
                     if response and hasattr(response, 'text'):
+                        # Reset cooldown on successful call
+                        rate_limiter.reset_cooldown()
+                        
                         # Parse JSON response
                         try:
                             # Extract JSON from response text
@@ -700,10 +979,20 @@ Create 3-5 meaningful clusters that capture the main study patterns in the class
                         self._mark_model_exhausted()
                         logger.warning(f"Model exhausted, switching to next available model")
                         
+                        # Trigger quota cooldown
+                        rate_limiter.trigger_quota_cooldown(duration_seconds=300)
+                        
                         # More conservative exponential backoff: 5s, 10s, 20s
                         wait_time = 5 * (2 ** attempt)
                         logger.warning(f"Rate limit hit, waiting {wait_time}s before retry {attempt + 1}")
                         time.sleep(wait_time)
+                        
+                        # Try to get a new model for next attempt
+                        model = self._get_working_model()
+                        if not model:
+                            raise Exception("No working AI models available after quota error")
+                        model_name = getattr(model, '_model_name', 'unknown')
+                        
                         continue
                     else:
                         logger.error(f"Gemini API error: {e}")
