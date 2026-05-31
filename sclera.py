@@ -5,6 +5,15 @@
 #           Institution Management (Admin/Teacher), Statistics, Settings
 # Excludes: Community/Bubbles/Chat (ScleraCollab), Careers/Courses (ScleraCareer)
 # ============================================================================
+
+
+
+#============================================================================
+#============================================================================
+# IMPORTS
+#============================================================================
+#============================================================================
+
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, abort, send_from_directory, make_response
 from firebase_config import auth, db
 from firebase_admin import auth as admin_auth, storage
@@ -34,7 +43,7 @@ import random
 import string
 from marshmallow import ValidationError
 import traceback
-from test_system import test_system   # noqa (remove if already imported at top)
+from test_system import test_system
 # Gemini Analytics import
 from gemini_analytics import gemini_analytics
 # AI Assistant import
@@ -42,31 +51,62 @@ from ai_assistant import get_ai_assistant
 # CLI Commands import
 from gemini_cli import register_cli_commands
 # Chat security utilities
+
+
 # Load environment variables from .env file
 from dotenv import load_dotenv
 load_dotenv()
+
+
+#============================================================================
+#============================================================================
+# INITIALISATION AND SET UP
+#============================================================================
+#============================================================================
+
+
 # Initialize Flask app with configuration
+# 1. Define {env} environment variables; 
+# 2. Initialise the flask application by defining {app}
+# 3. {__name__) allows Flask to determine the root path for the application to locate resources like templates and static files relative to the module.
+# 4. Finally, app is initialised by init_app function
 env = os.environ.get('FLASK_ENV', 'production')
 app = Flask(__name__, template_folder='sclera_templates')
 config[env].init_app(app)
+
+
 # Dedicated CSS endpoint with explicit MIME type
+# 1. Define the route for the CSS file
+# 2. Import send_from_directory to serve static files
+# 3. Return the CSS file with the correct MIME type
 @app.route('/styles.css')
 def serve_css():
     from flask import send_from_directory
     return send_from_directory('static', 'styles.css')
+
+
 # Initialize rate limiter
+# 1. Check if rate limits should be disabled based on environment or config
+# 2. Create a Limiter instance with the app, key function, default limits, and storage
 disable_rate_limits = (
     env == 'development' or
     os.environ.get('DISABLE_RATE_LIMITS', 'False').lower() == 'true'
 )
 limiter = Limiter(
     app=app,
-    key_func=get_remote_address,
-    default_limits=[config[env].RATE_LIMIT_DEFAULT],
-    enabled=(not disable_rate_limits),
-    storage_uri="memory://"
+    key_func=get_remote_address, # Get the remote address of the client
+    default_limits=[config[env].RATE_LIMIT_DEFAULT], # Set the default rate limit
+    enabled=(not disable_rate_limits), # Enable or disable rate limiting
+    storage_uri="memory://" # Use memory storage for rate limiting
 )
+
+
 # Initialize security headers with Talisman
+# 1. Force HTTPS for session cookies - forces session cookies to transfer only on secure HTTPS channels and allows for setting HTTP Strict Transport Security (HSTS) Headers. 
+# 2. Enable strict transport security - first enabled, then max age set to 1 year and then we allow the same for sub_domains or sub_pages
+# 3. Set strict transport security max age
+# 4. Include subdomains in strict transport security - Content Secure Policy - It configures the Flask-Talisman extension to restrict the resources the browser is allowed to load, mitigating attacks like Cross-Site Scripting (XSS).
+# 5. {user_ref} References a document for a user in Firestore and is updated during login flow events.
 Talisman(app,
     force_https=config[env].SESSION_COOKIE_SECURE,
     strict_transport_security=True,
@@ -86,7 +126,9 @@ Talisman(app,
     referrer_policy='strict-origin-when-cross-origin'
 )
 user_ref = None
-# Initialize Flask-Mail
+
+
+# Initialize Flask-Mail and Report Generation Helper functions
 mail = Mail(app)
 from report_generator import generate_class_report_pdf, generate_student_report_pdf
 import io, json
@@ -95,17 +137,11 @@ try:
     PDFPLUMBER_AVAILABLE = True
 except ImportError:
     PDFPLUMBER_AVAILABLE = False
-# ============================================================================
-# INSTITUTION V2 CONSTANTS / HELPERS
-# ============================================================================
-INSTITUTION_ADMINS_COL = 'institution_admins'
-INSTITUTION_TEACHERS_COL = 'institution_teachers'
-INSTITUTIONS_COL = 'institutions'
-TEACHER_INVITES_COL = 'teacher_invites'
-CLASSES_COL = 'classes'
-CLASS_INVITES_COL = 'class_invites'
-def _generate_code(length: int = 6) -> str:
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+# Setting the identity of a particular session by defining the uid of the Flask session, the account type to handle permissions and initialising/popping {institution_id} based on availability.
+# UID - Represents the user/session identifier stored in Flask session data. 
+# Set in _set_session_identity(uid, account_type, institution_id=None). 
+# Stored as session['uid'] for subsequent access control and profile lookups.
 def _set_session_identity(uid: str, account_type: str, institution_id: str | None = None):
     session['uid'] = uid
     session['account_type'] = account_type  # 'student' | 'teacher' | 'admin'
@@ -113,8 +149,42 @@ def _set_session_identity(uid: str, account_type: str, institution_id: str | Non
         session['institution_id'] = institution_id
     else:
         session.pop('institution_id', None)
+
+# ============================================================================
+# ============================================================================
+# INSTITUTION CONSTANTS / HELPERS
+# ============================================================================
+# ============================================================================
+
+
+# Defining Institution Constants like: 
+# 1. INSTITUTION_ADMINS_COL - column name for insitution admins; used to reference the admins collection
+# 2. INSTITUTION_TEACHERS_COL - column name for insitution teachers; used to reference the teachers collection
+# 3. INSTITUTIONS_COL - column name for insitution; ...
+# 4. TEACHER_INVITES_COL - column name for teacher invites; ...
+# 5. CLASSES_COL - column name for classes; ...
+INSTITUTION_ADMINS_COL = 'institution_admins'
+INSTITUTION_TEACHERS_COL = 'institution_teachers'
+INSTITUTIONS_COL = 'institutions'
+TEACHER_INVITES_COL = 'teacher_invites'
+CLASSES_COL = 'classes'
+CLASS_INVITES_COL = 'class_invites'
+
+
+# Function for generating a random code for tasks like teacher invites and student invites: institution_admin_create_teacher_invite and generate_invite routes
+def _generate_code(length: int = 6) -> str:
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+
+# Function to get the account type to allow for the working of privileged access 
 def _get_account_type() -> str:
-    return session.get('account_type', 'student')
+    return session.get('account_type', 'student') # Least privilege principle adopted
+
+
+# Decorator enforcing session-based role access for Flask routes.
+# Returns a decorator validating user is logged in.
+# Checks role against allowed_roles; aborts with 403 if not matched.
+# Redirects to login if no uid in session.
 def require_institution_role(allowed_roles: list[str]):
     def decorator(f):
         @wraps(f)
@@ -127,14 +197,38 @@ def require_institution_role(allowed_roles: list[str]):
             return f(*args, **kwargs)
         return wrapper
     return decorator
+
+
+#Enforces admin only access to certain routes, functions and features 
 require_admin_v2 = require_institution_role(['admin'])
+
+
+#Enforces teacher only access to certain routes, functions and features
 require_teacher_v2 = require_institution_role(['teacher'])
+
+
+# Returns admin profile by UID if present and admin-type.
+# Uses {_get_any_profile} for base retrieval
+# Validates account_type is 'admin'; returns None otherwise
+# Used by {login_admin} and {institution_admin_dashboard} flows
 def _get_admin_profile(uid: str) -> dict | None:
     profile = _get_any_profile(uid)
     return profile if profile and profile.get('account_type') == 'admin' else None
+
+
+# Retrieves a teacher profile by UID if present
+# Delegates to {_get_any_profile} for base retrieval
+# Ensures returned profile is of account_type 'teacher'
+# Used by teacher-focused routes like syllabus, classes, dashboard, and join flows
 def _get_teacher_profile(uid: str) -> dict | None:
     profile = _get_any_profile(uid)
     return profile if profile and profile.get('account_type') == 'teacher' else None
+
+
+# Retrieves a user profile by UID from multiple identity collections.
+# Checks admins, then teachers, then students; returns profile with account_type.
+# Returns None if no profile found.
+# Used by _get_admin_profile and _get_teacher_profile for type filtering.
 def _get_any_profile(uid: str) -> dict | None:
     """Check all identity collections and return profile + account_type."""
     # Check collections in order of specificity
@@ -145,17 +239,25 @@ def _get_any_profile(uid: str) -> dict | None:
     doc = db.collection('users').document(uid).get()
     if doc.exists: return {**doc.to_dict(), 'account_type': 'student'}
     return None
+
+
+
 def _get_institution_analytics(institution_id, class_ids=None):
     """
     Enhanced analytics with Gemini AI predictions for at-risk detection.
     Falls back to rule-based logic if AI predictions unavailable.
     If class_ids is provided, filter students by those classes.
     """
-    heatmap_data = defaultdict(int)
-    at_risk_students = []
+
+    # Variable defined for heatmap data aggregation
+    # Defining an array for at risk students - stored later
+    # Makes the function return immediately with empty data rather than making unnecessary Firestore queries and potentially running into errors later.
+    heatmap_data = defaultdict(int) 
+    at_risk_students = [] 
     if not institution_id:
-        return {'heatmap': {}, 'at_risk': []}
+        return {'heatmap': {}, 'at_risk': []} 
     
+
     # 1. Fetch relevant classes
     classes_ref = db.collection(CLASSES_COL).where('institution_id', '==', institution_id)
     classes_docs = list(classes_ref.stream())
@@ -305,6 +407,8 @@ def _get_institution_analytics(institution_id, class_ids=None):
         'heatmap': dict(heatmap_data),
         'at_risk': at_risk_students
     }
+
+
 def _institution_login_guard():
     """Prevent admin/teacher accounts from entering student app routes."""
     if 'uid' not in session:
@@ -332,13 +436,24 @@ def _institution_login_guard():
 # STATISTICS
 # ============================================================================
 TEST_TYPES = [
-    "Unit Test 1", "Unit Test 2", "Unit Test 3", "Unit Test 4",
-    "Unit Test 5", "Unit Test 6",
-    "Quarterly", "Half Yearly",
+    # Unit Tests & Periodic Assessments
+    "Unit Test 1", "Unit Test 2", "Unit Test 3", "Unit Test 4", "Unit Test 5", "Unit Test 6",
+    "Periodic Assessment 1", "Periodic Assessment 2", "Periodic Assessment 3", "Periodic Assessment 4",
+    
+    # Midterms, Quarters & Term-based Exams
     "Pre Midterms", "Midterms", "Post Midterms",
-    "1st Midterm", "2nd Midterm",
+    "1st Midterm", "2nd Midterm", "3rd Midterm",
+    "1st Terminal", "2nd Terminal", "3rd Terminal",
+    "First Quarterly", "Second Quarterly", "Third Quarterly",
+    "Half Yearly",
+    
+    # CBSE Summative Framework
+    "Summative Assessment 1", "Summative Assessment 2",
+    
+    # Finals, Pre-Boards & Year-End Exams
     "Pre Finals", "Finals",
-    "Pre Annual", "Annual"
+    "Pre Annual", "Annual",
+    "Pre Board 1", "Pre Board 2", "Pre Board 3", "Boards"
 ]
 def require_login(f):
     def wrapper(*args, **kwargs):
